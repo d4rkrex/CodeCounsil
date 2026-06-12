@@ -35,6 +35,7 @@ dev = [
 
 [project.scripts]
 project-review = "core.cli:main"
+codecounsil-install = "core.install:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
