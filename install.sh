@@ -39,37 +39,40 @@ HAS_CLAUDE=0; HAS_COPILOT=0; HAS_OPENCODE=0
 # Claude Code: check for the 'claude' binary
 command -v claude &>/dev/null && HAS_CLAUDE=1
 
-# GitHub Copilot: check for gh extension or VS Code extension directory
+# GitHub Copilot CLI: check for ~/.copilot/skills/ directory (this agent)
+HAS_COPILOT_CLI=0
+[[ -d "$HOME/.copilot/skills" ]] && HAS_COPILOT_CLI=1
+
+# GitHub Copilot VS Code: check for gh extension or VS Code extension directory
+HAS_COPILOT=0
 if command -v gh &>/dev/null && gh extension list 2>/dev/null | grep -q "copilot"; then
   HAS_COPILOT=1
 fi
-# Also detect VS Code with Copilot extension
 if [[ -d "$HOME/.vscode/extensions" ]] && ls "$HOME/.vscode/extensions/" 2>/dev/null | grep -qi "github.copilot"; then
   HAS_COPILOT=1
 fi
-# Or Cursor
-if command -v cursor &>/dev/null; then
-  HAS_COPILOT=1
-fi
+command -v cursor &>/dev/null && HAS_COPILOT=1
 
 # OpenCode: check for 'opencode' binary
 command -v opencode &>/dev/null && HAS_OPENCODE=1
 
-[[ $HAS_CLAUDE   -eq 1 ]] && echo -e "  ${GREEN}✓ Claude Code detected${RESET}"   || echo -e "  ○ Claude Code  — not detected"
-[[ $HAS_COPILOT  -eq 1 ]] && echo -e "  ${GREEN}✓ GitHub Copilot detected${RESET}" || echo -e "  ○ GitHub Copilot — not detected"
-[[ $HAS_OPENCODE -eq 1 ]] && echo -e "  ${GREEN}✓ OpenCode detected${RESET}"       || echo -e "  ○ OpenCode — not detected"
+[[ $HAS_CLAUDE       -eq 1 ]] && echo -e "  ${GREEN}✓ Claude Code detected${RESET}"           || echo -e "  ○ Claude Code — not detected"
+[[ $HAS_COPILOT_CLI  -eq 1 ]] && echo -e "  ${GREEN}✓ GitHub Copilot CLI detected${RESET}"    || echo -e "  ○ GitHub Copilot CLI — not detected"
+[[ $HAS_COPILOT      -eq 1 ]] && echo -e "  ${GREEN}✓ GitHub Copilot (VS Code) detected${RESET}" || echo -e "  ○ GitHub Copilot (VS Code) — not detected"
+[[ $HAS_OPENCODE     -eq 1 ]] && echo -e "  ${GREEN}✓ OpenCode detected${RESET}"               || echo -e "  ○ OpenCode — not detected"
 echo ""
 
 # Ask about undetected agents
-if [[ $HAS_CLAUDE -eq 0 || $HAS_COPILOT -eq 0 || $HAS_OPENCODE -eq 0 ]]; then
+if [[ $HAS_CLAUDE -eq 0 || $HAS_COPILOT_CLI -eq 0 || $HAS_COPILOT -eq 0 || $HAS_OPENCODE -eq 0 ]]; then
   echo -e "${YELLOW}Some agents were not auto-detected. Install adapters for them anyway?${RESET}"
-  [[ $HAS_CLAUDE   -eq 0 ]] && read -rp "  Install Claude Code adapter?  [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_CLAUDE=1
-  [[ $HAS_COPILOT  -eq 0 ]] && read -rp "  Install GitHub Copilot adapter? [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_COPILOT=1
-  [[ $HAS_OPENCODE -eq 0 ]] && read -rp "  Install OpenCode adapter?      [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_OPENCODE=1
+  [[ $HAS_CLAUDE      -eq 0 ]] && read -rp "  Install Claude Code adapter?         [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_CLAUDE=1
+  [[ $HAS_COPILOT_CLI -eq 0 ]] && read -rp "  Install GitHub Copilot CLI skill?    [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_COPILOT_CLI=1
+  [[ $HAS_COPILOT     -eq 0 ]] && read -rp "  Install GitHub Copilot VS Code adapter? [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_COPILOT=1
+  [[ $HAS_OPENCODE    -eq 0 ]] && read -rp "  Install OpenCode adapter?             [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_OPENCODE=1
   echo ""
 fi
 
-if [[ $HAS_CLAUDE -eq 0 && $HAS_COPILOT -eq 0 && $HAS_OPENCODE -eq 0 ]]; then
+if [[ $HAS_CLAUDE -eq 0 && $HAS_COPILOT_CLI -eq 0 && $HAS_COPILOT -eq 0 && $HAS_OPENCODE -eq 0 ]]; then
   echo "No agents selected. Nothing to install."
   exit 0
 fi
@@ -79,9 +82,10 @@ fi
 echo -e "${CYAN}▶ Where do you want to install the adapters?${RESET}"
 echo ""
 echo -e "  ${BOLD}[1] Global${RESET} — installs to your home config directories"
-echo -e "      ${YELLOW}Claude Code${RESET}  → ~/.claude/commands/ and ~/.claude/agents/"
-echo -e "      ${YELLOW}GitHub Copilot${RESET}  → (per-project only, not applicable globally)"
-echo -e "      ${YELLOW}OpenCode${RESET}  → (per-project only, not applicable globally)"
+echo -e "      ${YELLOW}Claude Code${RESET}       → ~/.claude/commands/ and ~/.claude/agents/"
+echo -e "      ${YELLOW}Copilot CLI${RESET}       → ~/.copilot/skills/codecounsil/  (global, always)"
+echo -e "      ${YELLOW}GitHub Copilot VS${RESET} → (per-project only)"
+echo -e "      ${YELLOW}OpenCode${RESET}           → (per-project only)"
 echo ""
 echo -e "  ${BOLD}[2] Per-project${RESET} — installs into a specific repo"
 echo -e "      Adds adapter files directly to that repository's config dirs"
@@ -114,9 +118,10 @@ echo -e "${CYAN}▶ Installing adapters...${RESET}"
 echo ""
 
 PLATFORMS=""
-[[ $HAS_CLAUDE   -eq 1 ]] && PLATFORMS="$PLATFORMS claude"
-[[ $HAS_COPILOT  -eq 1 ]] && PLATFORMS="$PLATFORMS copilot"
-[[ $HAS_OPENCODE -eq 1 ]] && PLATFORMS="$PLATFORMS opencode"
+[[ $HAS_CLAUDE      -eq 1 ]] && PLATFORMS="$PLATFORMS claude"
+[[ $HAS_COPILOT_CLI -eq 1 ]] && PLATFORMS="$PLATFORMS copilot_cli"
+[[ $HAS_COPILOT     -eq 1 ]] && PLATFORMS="$PLATFORMS copilot"
+[[ $HAS_OPENCODE    -eq 1 ]] && PLATFORMS="$PLATFORMS opencode"
 
 install_adapters() {
   local target="$1"
@@ -137,6 +142,14 @@ install_adapters() {
           count=$((count+1))
         done
         echo -e "    ${GREEN}✓${RESET} .claude/agents/  ($count specialist agents)"
+        ;;
+      copilot_cli)
+        # Copilot CLI skill — always global regardless of mode
+        echo -e "  ${BOLD}GitHub Copilot CLI${RESET}"
+        SKILL_DIR="$HOME/.copilot/skills/codecounsil"
+        mkdir -p "$SKILL_DIR"
+        cp "$REPO_DIR/adapters/copilot-cli/SKILL.md" "$SKILL_DIR/SKILL.md"
+        echo -e "    ${GREEN}✓${RESET} ~/.copilot/skills/codecounsil/SKILL.md  (trigger: 'run a CodeCounsil review')"
         ;;
       copilot)
         echo -e "  ${BOLD}GitHub Copilot${RESET}"
@@ -193,14 +206,20 @@ echo -e "${GREEN}${BOLD}  ✓ CodeCounsil installed successfully!   ${RESET}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════${RESET}"
 echo ""
 
-if [[ $HAS_CLAUDE -eq 1 ]]; then
+if [[ $HAS_CLAUDE      -eq 1 ]]; then
   echo -e "  ${BOLD}Claude Code${RESET}"
   echo -e "  Open the repo in Claude Code and run:"
   echo -e "    ${CYAN}/project-review full${RESET}"
   echo ""
 fi
-if [[ $HAS_COPILOT -eq 1 ]]; then
-  echo -e "  ${BOLD}GitHub Copilot${RESET}"
+if [[ $HAS_COPILOT_CLI -eq 1 ]]; then
+  echo -e "  ${BOLD}GitHub Copilot CLI${RESET}"
+  echo -e "  In any repo, just say:"
+  echo -e "    ${CYAN}run a full CodeCounsil review${RESET}"
+  echo ""
+fi
+if [[ $HAS_COPILOT  -eq 1 ]]; then
+  echo -e "  ${BOLD}GitHub Copilot (VS Code)${RESET}"
   echo -e "  Ask Copilot Chat:"
   echo -e "    ${CYAN}run a full CodeCounsil review${RESET}"
   echo ""
