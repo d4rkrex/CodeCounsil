@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CodeCounsil Execution Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "started_at",
+    "change",
+    "stages",
+    "specialists_selected",
+    "specialists_excluded",
+    "findings_count",
+    "challenger_decisions",
+    "errors"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "format": "uuid"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": ["string", "null"], "format": "date-time"},
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "target_repo", "config_hash", "effective_config"],
+      "properties": {
+        "mode": {"type": "string"},
+        "target_repo": {"type": "string"},
+        "config_hash": {"type": "string"},
+        "effective_config": {"type": "object"}
+      }
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stage_name", "started_at", "completed_at", "status", "commands", "tool_results", "artifact_hashes", "notes"],
+        "properties": {
+          "stage_name": {"type": "string"},
+          "started_at": {"type": "string", "format": "date-time"},
+          "completed_at": {"type": ["string", "null"], "format": "date-time"},
+          "status": {"type": "string", "enum": ["running", "complete", "failed", "skipped"]},
+          "commands": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["cmd", "exit_code", "summary", "at"],
+              "properties": {
+                "cmd": {"type": "array", "items": {"type": "string"}},
+                "exit_code": {"type": ["integer", "null"]},
+                "summary": {"type": "string"},
+                "at": {"type": "string", "format": "date-time"}
+              }
+            }
+          },
+          "tool_results": {
+            "type": "array",
+            "items": {"type": "object"}
+          },
+          "artifact_hashes": {
+            "type": "object",
+            "additionalProperties": {"type": "string"}
+          },
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "specialists_selected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "reason"],
+        "properties": {
+          "name": {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "specialists_excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "reason"],
+        "properties": {
+          "name": {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "rejected_config_overrides": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "findings_count": {"type": "integer", "minimum": 0},
+    "challenger_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["finding_id", "decision", "reasoning", "at"],
+        "properties": {
+          "finding_id": {"type": "string"},
+          "decision": {"type": "string"},
+          "reasoning": {"type": "string"},
+          "at": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stage", "error", "at"],
+        "properties": {
+          "stage": {"type": "string"},
+          "error": {"type": "string"},
+          "at": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  }
+}

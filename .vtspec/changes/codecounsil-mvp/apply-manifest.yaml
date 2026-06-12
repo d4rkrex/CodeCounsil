@@ -1,0 +1,54 @@
+schema_version: "1.0"
+change_name: codecounsil-mvp
+pattern: sequential
+groups:
+  - group_id: group-all
+    files_owned:
+      - "**/*"
+    tasks:
+      - T-001
+      - T-002
+      - T-003
+      - T-004
+      - T-005
+      - T-006
+      - T-007
+      - T-008
+      - T-009
+      - T-009
+      - T-009
+      - T-009
+      - T-009
+      - T-009
+      - T-009
+      - T-009
+      - task-17
+      - task-18
+      - task-19
+      - task-20
+      - task-21
+      - task-22
+    forbidden_paths:
+      - .vtspec/
+      - .vtspec/**
+max_workers: 1
+tasks_hash: sha256:6e5c790b23fda0008c04ae9c4536d8d72449ba7e86deb1cf7ec3449f717f98e0
+review_hash: sha256:9ae8a5f01941012900d0be1dca7ddc0c4bc27e10f43753fe60dd394480e0d8f3
+restricted_paths:
+  - .vtspec/
+  - .vtspec/**
+  - "*.env"
+  - .env*
+  - "*secret*"
+  - "*credential*"
+  - "*auth-config*"
+  - "*.key"
+  - "*.pem"
+  - "*.p12"
+  - "*.pfx"
+generated_at: 2026-06-12T14:40:14.680Z
+fleet_recommendation:
+  mode: sequential
+  score: 0
+  reasons:
+    - Single task group — nothing to parallelize

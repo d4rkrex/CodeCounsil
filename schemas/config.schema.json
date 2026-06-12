@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CodeCounsil Config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
+        "criticality": {"type": "string"},
+        "environment": {"type": "string"}
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_mode": {"type": "string"},
+        "modify_code": {"const": false},
+        "require_evidence": {"type": "boolean"},
+        "minimum_confidence": {"type": "string"},
+        "output_directory": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\.\\.).+$"
+        }
+      }
+    },
+    "specialists": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "architecture": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"enabled": {"type": "boolean"}}
+        },
+        "developer": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"enabled": {"type": "boolean"}}
+        },
+        "qa": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"enabled": {"type": "boolean"}}
+        },
+        "security": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"enabled": {"const": true}}
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "focus": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow_execution": {"type": "boolean"},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 300},
+        "max_file_size_bytes": {"type": "integer", "minimum": 1, "maximum": 1048576},
+        "max_file_count": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "max_output_bytes": {"type": "integer", "minimum": 1, "maximum": 51200}
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+specialists:
+  security:
+    enabled: false
+review:
+  modify_code: true

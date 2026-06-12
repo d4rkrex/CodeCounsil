@@ -1,0 +1,20 @@
+change: codecounsil-mvp
+phase: tasks
+status: complete
+created: 2026-06-12T14:24:09.581Z
+updated: 2026-06-12T14:40:14.687Z
+phases_completed:
+  - proposal
+  - spec
+  - review
+  - tasks
+history:
+  - phase: proposal
+    status: complete
+    timestamp: 2026-06-12T14:24:09.581Z
+  - phase: spec
+    status: complete
+    timestamp: 2026-06-12T14:26:10.079Z
+  - phase: review
+    status: complete
+    timestamp: 2026-06-12T14:37:31.026Z

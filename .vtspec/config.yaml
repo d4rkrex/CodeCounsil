@@ -1,0 +1,16 @@
+version: "0.2"
+project:
+  name: CodeCounsil
+  description: Multi-disciplinary code review framework orchestrating specialized
+    agents for evidence-based structured findings
+  stack: Python + JSON Schema + YAML + Jinja2
+  conventions:
+    - evidence-before-opinion
+    - structured-findings
+    - JSON-schema-validation
+    - no-code-modification
+    - deterministic-tool-collection
+security:
+  posture: elevated
+memory:
+  backend: local

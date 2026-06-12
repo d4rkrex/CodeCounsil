@@ -1,0 +1,37 @@
+# Technical Report
+
+**Repository**: {{ project.repo_path }}
+
+## All Confirmed Findings
+
+{% for f in consolidated.findings %}
+---
+### {{ f.id }}: {{ f.title }}
+
+| Field | Value |
+|-------|-------|
+| Severity | {{ f.severity }} |
+| Priority | {{ f.priority }} |
+| Classification | {{ f.classification }} |
+| Confidence | {{ f.confidence }} |
+| Domains | {{ f.domains | join(', ') }} |
+| Effort | {{ f.effort | default('unknown') }} |
+
+**Observation**: {{ f.observation }}
+
+**Impact**: {{ f.impact }}
+
+{% if f.evidence %}
+**Evidence**:
+{% for e in f.evidence %}
+- `{{ e.file }}` lines {{ e.start_line }}-{{ e.end_line }}: {{ e.description }}
+{% endfor %}
+{% endif %}
+
+**Recommendation**: {{ f.recommendation }}
+
+{% if f.challenger %}
+**Challenger Decision**: {{ f.challenger.decision }} — {{ f.challenger.reasoning }}
+{% endif %}
+
+{% endfor %}

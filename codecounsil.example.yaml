@@ -1,0 +1,36 @@
+project:
+  name: Example Project
+  description: Example CodeCounsil configuration
+  criticality: standard
+  environment: development
+
+review:
+  default_mode: full
+  modify_code: false
+  require_evidence: true
+  minimum_confidence: medium
+  output_directory: .review
+
+specialists:
+  architecture:
+    enabled: true
+  developer:
+    enabled: true
+  qa:
+    enabled: true
+  security:
+    enabled: true
+
+security:
+  focus:
+    - authorization
+    - business_logic
+    - secrets
+    - cloud_iam
+
+tools:
+  allow_execution: true
+  timeout_seconds: 60
+  max_file_size_bytes: 1048576
+  max_file_count: 10000
+  max_output_bytes: 51200

@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CodeCounsil Project Context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generated_at",
+    "repo_path",
+    "languages",
+    "frameworks",
+    "app_type",
+    "components",
+    "entrypoints"
+  ],
+  "properties": {
+    "generated_at": {"type": "string", "format": "date-time"},
+    "repo_path": {"type": "string", "minLength": 1},
+    "languages": {"type": "array", "items": {"type": "string"}},
+    "frameworks": {"type": "array", "items": {"type": "string"}},
+    "app_type": {"type": "string"},
+    "components": {"type": "array", "items": {"type": "string"}},
+    "entrypoints": {"type": "array", "items": {"type": "string"}},
+    "apis": {"type": "array", "items": {"type": "string"}},
+    "databases": {"type": "array", "items": {"type": "string"}},
+    "external_services": {"type": "array", "items": {"type": "string"}},
+    "iac": {"type": "array", "items": {"type": "string"}},
+    "pipelines": {"type": "array", "items": {"type": "string"}},
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "frameworks", "locations"],
+      "properties": {
+        "present": {"type": "boolean"},
+        "frameworks": {"type": "array", "items": {"type": "string"}},
+        "locations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "documentation": {"type": "array", "items": {"type": "string"}},
+    "frontend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "frameworks"],
+      "properties": {
+        "present": {"type": "boolean"},
+        "frameworks": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "auth_mechanisms": {"type": "array", "items": {"type": "string"}},
+    "config_files": {"type": "array", "items": {"type": "string"}},
+    "dependency_managers": {"type": "array", "items": {"type": "string"}},
+    "file_count": {"type": "integer", "minimum": 0},
+    "total_size_bytes": {"type": "integer", "minimum": 0},
+    "diff_branch": {"type": ["string", "null"]},
+    "changed_files": {"type": "array", "items": {"type": "string"}},
+    "truncated": {"type": "boolean"},
+    "truncation_reason": {"type": ["string", "null"]}
+  }
+}
