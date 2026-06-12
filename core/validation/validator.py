@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # FR-8: JSON Schema validation for findings
 
 import json

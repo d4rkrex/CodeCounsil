@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # VT-Spec T-002: strict validation, immutable mandatory phases
 # VT-Spec T-006: yaml.safe_load only
 

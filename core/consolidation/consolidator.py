@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # FR-7: Deduplication, cross-domain correlation, prioritization
 
 PRIORITY_MAP = {

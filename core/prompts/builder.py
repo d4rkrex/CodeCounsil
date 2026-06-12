@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # VT-Spec T-001: Provenance labels on all repo content
 # VT-Spec T-005: Secret redaction, control-sequence stripping, and explicit allowlist reminders
 

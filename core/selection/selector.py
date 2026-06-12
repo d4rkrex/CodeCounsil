@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # FR-4: Specialist selection with reason logging
 
 from ..manifest.manifest import ExecutionManifest

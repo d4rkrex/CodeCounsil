@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # VT-Spec T-006: Jinja2 SandboxedEnvironment + autoescape
 # VT-Spec T-009: templates are loaded from package assets, never from the repository
 

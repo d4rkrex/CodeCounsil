@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # VT-Spec T-008: subprocess execution with allowlist, no shell=True
 # VT-Spec T-007: timeout and output size limits
 # VT-Spec T-005: strip control sequences from tool output

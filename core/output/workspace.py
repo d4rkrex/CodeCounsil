@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # VT-Spec T-003: safe output directory — reject symlinks, hardlinks, validate canonical paths, and use O_NOFOLLOW writes
 
 import errno

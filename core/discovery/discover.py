@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # VT-Spec T-007: file size, count, and symlink depth limits
 # VT-Spec T-001: discovery output is framework-generated, not repo content
 

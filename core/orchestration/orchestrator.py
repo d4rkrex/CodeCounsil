@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # FR-1: Main orchestration — full/focused/diff modes
 # VT-Spec T-002: mandatory stages enforced
 # VT-Spec T-009: agent and checklist resolution uses package assets only

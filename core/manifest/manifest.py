@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # VT-Spec T-004: append-only execution manifest — log BEFORE execution
 
 import hashlib
