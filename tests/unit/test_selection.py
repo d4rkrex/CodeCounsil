@@ -12,11 +12,28 @@ def make_manifest(tmp_path: Path) -> ExecutionManifest:
 
 
 def test_full_mode_selects_all_available_domain_specialists_when_tests_present(tmp_path: Path) -> None:
+    # CC-QA-001: use set membership checks instead of exact equality
+    # so the test doesn't break when new conditional specialists are added
     manifest = make_manifest(tmp_path)
     config = CodeCounsilConfig()
     context = {"tests": {"present": True}}
     selected = select_specialists("full", context, config, manifest)
-    assert selected == ["architecture", "developer", "qa", "security", "data_privacy", "discovery", "challenger", "consolidator"]
+    # Mandatory specialists always present
+    assert "discovery" in selected
+    assert "challenger" in selected
+    assert "consolidator" in selected
+    # Core MVP specialists always present in full mode with tests
+    assert "architecture" in selected
+    assert "developer" in selected
+    assert "qa" in selected
+    assert "security" in selected
+    assert "data_privacy" in selected
+    # v1.1 conditional specialists NOT present without their context signals
+    assert "ux" not in selected       # requires frontend.present=True
+    assert "sre" not in selected      # requires iac or pipelines
+    assert "finops" not in selected   # requires terraform/cloudformation
+    assert "product" not in selected  # requires documentation
+    assert "ai" not in selected       # requires has_ai_libraries=True
 
 
 def test_security_mode_selects_only_security_plus_mandatory(tmp_path: Path) -> None:

@@ -115,6 +115,28 @@ A successful run produces:
 - `prioritized-backlog.md`: remediation backlog grouped by priority
 - `limitations.md`: unavailable tools, excluded specialists, and execution errors
 
+## Known Limitations
+
+### Project Discovery (heuristic-based)
+
+`project-context.json` is produced by heuristic content scanning. **Always review it after Phase 1** before trusting specialist selections.
+
+Common false positives:
+- **Frameworks**: if your repo contains documentation, checklists, or agent `.md` files that mention framework names (e.g., `react`, `django`), those may be detected even if the framework is not used. Fixed in v1.1 — framework detection is restricted to source code files.
+- **AI libraries**: same as above — `openai`, `langchain` in `.md` docs will not trigger AI detection (restricted to `.py`, `.ts`, `.js` etc.).
+- **Databases**: `postgres` or `sqlite` mentioned in docs or test fixtures may appear in `databases`.
+
+If discovery produces wrong results, you can:
+1. Check `.review/project-context.json` and manually verify
+2. Use focused mode (`project-review security`) to skip specialists for unrelated domains
+3. File an issue — detection rules are in `core/discovery/discover.py`
+
+### Tool Execution
+
+Deterministic tools (SAST, SCA, linters) only run if installed on the host. Missing tools are recorded in `.review/limitations.md` and never treated as findings.
+
+For production use, run inside a sandboxed container with tools pre-installed.
+
 ## Architecture Overview
 
 CodeCounsil uses a two-layer design:

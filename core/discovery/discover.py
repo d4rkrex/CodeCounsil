@@ -265,33 +265,30 @@ def _classify_content(
     lower = content.lower()
     rel_text = str(rel_file)
 
-    for framework, indicators in FRAMEWORK_INDICATORS.items():
-        if any(indicator.lower() in lower for indicator in indicators):
-            frameworks.add(framework)
-    if rel_file.name in ENTRYPOINT_NAMES or 'if __name__ == "__main__"' in content or "FastAPI(" in content:
-        entrypoints.add(rel_text)
-    if "@app.get" in lower or "@router.get" in lower or "route(" in lower or "fastapi(" in lower:
-        apis.add(rel_text)
-    if "sqlite:///" in lower:
-        databases.add("sqlite")
-    if "postgres" in lower:
-        databases.add("postgres")
-    if "sqlalchemy" in lower:
-        databases.add("sqlalchemy")
-    if "requests." in lower or "httpx." in lower or "boto3" in lower or "stripe" in lower:
-        services.add(rel_text)
-    if any(token in lower for token in ("auth", "oauth", "jwt", "bearer", "session")):
-        auth.update({token for token in ("jwt", "oauth", "session") if token in lower})
-    if "pytest" in lower:
-        context["tests"]["present"] = True
-        test_frameworks.add("pytest")
-    if "unittest" in lower:
-        context["tests"]["present"] = True
-        test_frameworks.add("unittest")
+    # CC-ARCH-001 / CC-SEC-001: Restrict all content-based detection to source
+    # code files. Documentation (.md, .txt, .rst, .adoc) and config files that
+    # mention framework names (e.g. checklists, agent prompts) must not trigger
+    # framework, database, auth, or any other detection.
+    is_source = rel_file.suffix.lower() not in {".md", ".txt", ".rst", ".adoc"}
 
-    # CC-SEC-001: Limit frontend/AI detection to source code files to avoid
-    # false positives from documentation and checklist .md files.
-    if rel_file.suffix.lower() not in {".md", ".txt", ".rst", ".adoc"}:
+    if is_source:
+        for framework, indicators in FRAMEWORK_INDICATORS.items():
+            if any(indicator.lower() in lower for indicator in indicators):
+                frameworks.add(framework)
+        if rel_file.name in ENTRYPOINT_NAMES or 'if __name__ == "__main__"' in content or "FastAPI(" in content:
+            entrypoints.add(rel_text)
+        if "@app.get" in lower or "@router.get" in lower or "route(" in lower or "fastapi(" in lower:
+            apis.add(rel_text)
+        if "sqlite:///" in lower:
+            databases.add("sqlite")
+        if "postgres" in lower:
+            databases.add("postgres")
+        if "sqlalchemy" in lower:
+            databases.add("sqlalchemy")
+        if "requests." in lower or "httpx." in lower or "boto3" in lower or "stripe" in lower:
+            services.add(rel_text)
+        if any(token in lower for token in ("auth", "oauth", "jwt", "bearer", "session")):
+            auth.update({token for token in ("jwt", "oauth", "session") if token in lower})
         if "react" in lower or rel_file.suffix.lower() in {".tsx", ".jsx"}:
             frontend_frameworks.add("react")
         if "vue" in lower:
@@ -299,7 +296,18 @@ def _classify_content(
         if "angular" in lower:
             frontend_frameworks.add("angular")
 
-    if rel_file.suffix.lower() in AI_SIGNAL_SUFFIXES or rel_file.name.lower() in {"requirements.txt", "pyproject.toml", "package.json"}:
+    if "pytest" in lower:
+        context["tests"]["present"] = True
+        test_frameworks.add("pytest")
+    if "unittest" in lower:
+        context["tests"]["present"] = True
+        test_frameworks.add("unittest")
+
+    # CC-DEV-001: Restrict AI detection to true source code suffixes only.
+    # .yaml/.yml/.txt/.json include tool outputs, checklists, and config files
+    # that mention AI library names without the project actually using them.
+    _AI_SOURCE_SUFFIXES = {".py", ".ipynb", ".js", ".jsx", ".ts", ".tsx"}
+    if rel_file.suffix.lower() in _AI_SOURCE_SUFFIXES or rel_file.name.lower() in {"requirements.txt", "pyproject.toml", "package.json"}:
         for library, indicators in AI_LIBRARY_INDICATORS.items():
             if any(indicator in lower for indicator in indicators):
                 ai_libraries.add(library)
