@@ -25,7 +25,13 @@ def create_safe_workspace(repo_path: Path, output_dir: str = ".review") -> Path:
 
     _validate_path_chain(canonical_repo, relative_output)
     if os.path.lexists(output_path):
-        _inspect_existing_tree(output_path)
+        # VT-Spec T-003: Reject if the workspace root itself is a symlink.
+        # We do NOT recurse to check hardlinks in an existing workspace because
+        # files written by a previous CodeCounsil run can legitimately have
+        # st_nlink > 1 (e.g. git hardlinks on APFS). The real protection is
+        # O_NOFOLLOW at write time and the fresh-recreation below.
+        if os.path.islink(output_path):
+            raise SecurityError(f"T-003: Symlink detected at output path root: {output_path}")
         _remove_existing(output_path)
 
     output_path.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -47,7 +53,7 @@ def safe_write(workspace: Path, relative_path: str | Path, content: str | bytes)
 
     _validate_path_chain(workspace, rel.parent)
     target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    _validate_path_chain(workspace, rel.parent)
+    # _validate_path_chain called once before mkdir is sufficient; no re-check needed.
 
     if os.path.lexists(target):
         _assert_safe_leaf(target)

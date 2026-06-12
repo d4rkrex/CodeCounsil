@@ -1,3 +1,23 @@
+---
+archived_at: "2026-06-12T15:52:58.517Z"
+change: "codecounsil-mvp"
+review_spec_hash: "sha256:95b10d91750bac2d00299d9e8894b79869928e5096e47693469a26da66a43c77"
+review_posture: "elevated"
+review_findings_count: 9
+review_critical_count: 4
+review_risk_level: "critical"
+review_timestamp: "2026-06-12T14:37:31.023Z"
+review_change: "codecounsil-mvp"
+audit_verdict: "pass"
+audit_timestamp: "2026-06-12T15:52:54.310Z"
+audit_hash: "sha256:7a40f1bf1bd05229b725afe508351429aa6cfdd4eea11bf24dbeb2f42fefbccd"
+audit_posture: "elevated"
+audit_requirements_passed: 11
+audit_requirements_total: 11
+audit_abuse_cases_verified: 7
+audit_abuse_cases_total: 7
+---
+
 # Specification: codecounsil-mvp
 
 ## Overview

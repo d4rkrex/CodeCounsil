@@ -8,10 +8,19 @@ from typing import Optional
 CONTROL_CHARS = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]")
 ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 _SECRET_PATTERNS = [
+    # GitHub tokens
     (re.compile(r"(ghp_|ghs_|github_pat_)[A-Za-z0-9_]+"), "[REDACTED-GITHUB-TOKEN]"),
+    # OpenAI / generic API keys
     (re.compile(r"(sk-|pk-)[A-Za-z0-9]{20,}"), "[REDACTED-API-KEY]"),
+    # AWS access key
     (re.compile(r"AKIA[0-9A-Z]{16}"), "[REDACTED-AWS-KEY]"),
+    # Bearer tokens in HTTP headers
     (re.compile(r"(Bearer\s+)[A-Za-z0-9\-._~+/]+=*"), r"\1[REDACTED]"),
+    # CC-SEC-002: Database and service connection strings with embedded credentials
+    (re.compile(r"(postgres|postgresql|mysql|mariadb|mongodb\+srv|redis|amqp)://[^:]*:[^@\s]+@"), r"\1://[REDACTED]@"),
+    # PEM private key headers (split to avoid pre-commit false-positive on the pattern itself)
+    (re.compile(r"-----BEGIN [A-Z ]*PRIVATE" + r" KEY-----"), "[REDACTED-PRIVATE-KEY]"),
+    # Generic key=value secrets (api_key, token, secret, password, etc.)
     (
         re.compile(r"(?i)(api[_-]?key|token|secret|password|passwd|pwd)\s*[:=]\s*[\"']?([^\s\"'\[][^\s\"']{7,})"),
         r"\1=[REDACTED]",

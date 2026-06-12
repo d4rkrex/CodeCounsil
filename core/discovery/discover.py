@@ -35,6 +35,18 @@ FRAMEWORK_INDICATORS = {
     "react": ("react", "useState("),
     "sqlalchemy": ("sqlalchemy", "create_engine("),
 }
+AI_LIBRARY_INDICATORS = {
+    "openai": ("openai",),
+    "anthropic": ("anthropic",),
+    "langchain": ("langchain",),
+    "langgraph": ("langgraph",),
+    "llama_index": ("llama_index", "llama-index"),
+    "transformers": ("transformers",),
+    "torch": ("import torch", "torch.", '"torch"', "'torch'"),
+    "tensorflow": ("tensorflow", "tf.keras"),
+    "sklearn": ("sklearn", "scikit-learn"),
+}
+AI_SIGNAL_SUFFIXES = {".py", ".ipynb", ".js", ".jsx", ".ts", ".tsx", ".toml", ".txt", ".json", ".yaml", ".yml"}
 
 ENTRYPOINT_NAMES = {"app.py", "main.py", "server.py", "manage.py", "index.js", "main.ts"}
 CONFIG_SUFFIXES = {".yaml", ".yml", ".toml", ".ini", ".json", ".env"}
@@ -58,6 +70,8 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
         "tests": {"present": False, "frameworks": [], "locations": []},
         "documentation": [],
         "frontend": {"present": False, "frameworks": []},
+        "has_ai_libraries": False,
+        "ai_libraries": [],
         "auth_mechanisms": [],
         "config_files": [],
         "dependency_managers": [],
@@ -85,6 +99,7 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
     test_frameworks: set[str] = set()
     test_locations: set[str] = set()
     frontend_frameworks: set[str] = set()
+    ai_libraries: set[str] = set()
 
     file_count = 0
     total_size = 0
@@ -115,7 +130,20 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
             _tally_language(file_path.suffix.lower(), languages)
             _classify_paths(rel_file, configs, dependency_managers, docs, iac, pipelines, test_locations, context)
             content = _read_snippet(file_path)
-            _classify_content(rel_file, content, frameworks, entrypoints, apis, databases, services, auth, test_frameworks, frontend_frameworks, context)
+            _classify_content(
+                rel_file,
+                content,
+                frameworks,
+                entrypoints,
+                apis,
+                databases,
+                services,
+                auth,
+                test_frameworks,
+                frontend_frameworks,
+                ai_libraries,
+                context,
+            )
 
         if context["truncated"]:
             break
@@ -124,7 +152,7 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
         context["app_type"] = "api"
     elif frontend_frameworks:
         context["app_type"] = "frontend"
-    elif any(name.endswith(".tf") for name in iac):
+    elif any(name.endswith(".tf") or name.startswith("terraform:") for name in iac):
         context["app_type"] = "infrastructure"
 
     context["languages"] = sorted(languages, key=lambda key: (-languages[key], key))
@@ -137,6 +165,8 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
     context["iac"] = sorted(iac)
     context["pipelines"] = sorted(pipelines)
     context["documentation"] = sorted(docs)
+    context["has_ai_libraries"] = bool(ai_libraries)
+    context["ai_libraries"] = sorted(ai_libraries)
     context["auth_mechanisms"] = sorted(auth)
     context["config_files"] = sorted(configs)[:100]
     context["dependency_managers"] = sorted(dependency_managers)
@@ -197,13 +227,17 @@ def _classify_paths(
     name = rel_file.name.lower()
     rel_text = str(rel_file)
 
-    if name in {"readme.md", "architecture.md", "adr.md"} or rel_file.parts[:1] == ("docs",):
+    if name in {"readme.md", "architecture.md", "adr.md", "contributing.md", "proyect.md"} or rel_file.parts[:1] == ("docs",):
         docs.add(rel_text)
     if name in {"requirements.txt", "pyproject.toml", "setup.py", "package.json", "go.mod", "cargo.toml", "gemfile", "pom.xml"}:
         dependency_managers.add(rel_text)
     if name in {"dockerfile", "docker-compose.yml", "docker-compose.yaml", "nginx.conf", ".env.example", "codecounsil.yaml"} or rel_file.suffix.lower() in CONFIG_SUFFIXES:
         configs.add(rel_text)
-    if name in {"main.tf", "variables.tf", "terraform.tfvars", "template.yaml", "cloudformation.yaml"} or "terraform" in rel_text.lower():
+    if rel_file.suffix.lower() == ".tf":
+        iac.add(f"terraform:{rel_text}")
+    elif name in {"template.yaml", "cloudformation.yaml", "template.yml", "cloudformation.yml"} or "cloudformation" in rel_text.lower():
+        iac.add(f"cloudformation:{rel_text}")
+    elif "terraform" in rel_text.lower():
         iac.add(rel_text)
     if ".github/workflows" in rel_text or name in {"jenkinsfile", ".travis.yml", ".gitlab-ci.yml", "circle.yml"}:
         pipelines.add(rel_text)
@@ -223,6 +257,7 @@ def _classify_content(
     auth: set[str],
     test_frameworks: set[str],
     frontend_frameworks: set[str],
+    ai_libraries: set[str],
     context: dict,
 ) -> None:
     lower = content.lower()
@@ -251,18 +286,26 @@ def _classify_content(
     if "unittest" in lower:
         context["tests"]["present"] = True
         test_frameworks.add("unittest")
-    if "react" in lower or rel_file.suffix.lower() in {".tsx", ".jsx"}:
-        frontend_frameworks.add("react")
-    if "vue" in lower:
-        frontend_frameworks.add("vue")
-    if "angular" in lower:
-        frontend_frameworks.add("angular")
+
+    # CC-SEC-001: Limit frontend/AI detection to source code files to avoid
+    # false positives from documentation and checklist .md files.
+    if rel_file.suffix.lower() not in {".md", ".txt", ".rst", ".adoc"}:
+        if "react" in lower or rel_file.suffix.lower() in {".tsx", ".jsx"}:
+            frontend_frameworks.add("react")
+        if "vue" in lower:
+            frontend_frameworks.add("vue")
+        if "angular" in lower:
+            frontend_frameworks.add("angular")
+
+    if rel_file.suffix.lower() in AI_SIGNAL_SUFFIXES or rel_file.name.lower() in {"requirements.txt", "pyproject.toml", "package.json"}:
+        for library, indicators in AI_LIBRARY_INDICATORS.items():
+            if any(indicator in lower for indicator in indicators):
+                ai_libraries.add(library)
 
 
 def _read_snippet(file_path: Path) -> str:
     try:
-        with file_path.open("rb") as handle:
-            data = handle.read(MAX_SNIPPET_BYTES)
+        with file_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            return handle.read(MAX_SNIPPET_BYTES)
     except OSError:
         return ""
-    return data.decode("utf-8", errors="replace")

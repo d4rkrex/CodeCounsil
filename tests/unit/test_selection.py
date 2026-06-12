@@ -11,12 +11,12 @@ def make_manifest(tmp_path: Path) -> ExecutionManifest:
     return ExecutionManifest(workspace=workspace, mode="full", target_repo=tmp_path, config_hash="sha256:test", effective_config={})
 
 
-def test_full_mode_selects_all_domain_specialists_when_tests_present(tmp_path: Path) -> None:
+def test_full_mode_selects_all_available_domain_specialists_when_tests_present(tmp_path: Path) -> None:
     manifest = make_manifest(tmp_path)
     config = CodeCounsilConfig()
     context = {"tests": {"present": True}}
     selected = select_specialists("full", context, config, manifest)
-    assert selected == ["architecture", "developer", "qa", "security", "discovery", "challenger", "consolidator"]
+    assert selected == ["architecture", "developer", "qa", "security", "data_privacy", "discovery", "challenger", "consolidator"]
 
 
 def test_security_mode_selects_only_security_plus_mandatory(tmp_path: Path) -> None:
@@ -42,3 +42,35 @@ def test_custom_mode_selects_architecture_and_security(tmp_path: Path) -> None:
     manifest = make_manifest(tmp_path)
     selected = select_specialists("architecture,security", {"tests": {"present": True}}, CodeCounsilConfig(), manifest)
     assert selected == ["architecture", "security", "discovery", "challenger", "consolidator"]
+
+
+def test_ux_excluded_when_no_frontend(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    selected = select_specialists("full", {"frontend": {"present": False}}, CodeCounsilConfig(), manifest)
+    assert "ux" not in selected
+
+
+def test_ux_selected_when_frontend_present(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    context = {"frontend": {"present": True}}
+    selected = select_specialists("full", context, CodeCounsilConfig(), manifest)
+    assert "ux" in selected
+
+
+def test_sre_excluded_when_no_iac_or_pipelines(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    selected = select_specialists("full", {"iac": [], "pipelines": []}, CodeCounsilConfig(), manifest)
+    assert "sre" not in selected
+
+
+def test_sre_selected_when_iac_present(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    context = {"iac": ["terraform:main.tf"], "pipelines": []}
+    selected = select_specialists("full", context, CodeCounsilConfig(), manifest)
+    assert "sre" in selected
+
+
+def test_data_privacy_always_selected_in_full_mode(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    selected = select_specialists("full", {}, CodeCounsilConfig(), manifest)
+    assert "data_privacy" in selected

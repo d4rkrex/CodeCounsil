@@ -1,12 +1,16 @@
 # Prioritized Backlog
 
-{% for f in consolidated.findings %}
-## {{ f.priority }}: {{ f.id }} — {{ f.title }}
+{%- if not consolidated.findings %}
+
+*No findings to report. Run specialist agents and re-run the pipeline.*
+{%- endif %}
+{%- for f in consolidated.findings %}
+
+## {{ f.priority }}: {{ f.id }} — {{ f.title | e }}
 
 - **Severity**: {{ f.severity }}
 - **Domain(s)**: {{ f.domains | join(', ') }}
 - **Effort**: {{ f.effort | default('unknown') }}
 - **Classification**: {{ f.classification }}
-- **Action**: {{ f.recommendation }}
-
-{% endfor %}
+- **Action**: {{ f.recommendation | e }}
+{%- endfor %}

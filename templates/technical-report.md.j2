@@ -4,9 +4,14 @@
 
 ## All Confirmed Findings
 
-{% for f in consolidated.findings %}
+{%- if not consolidated.findings %}
+
+*No findings to report. Run specialist agents and re-run the pipeline.*
+{%- endif %}
+{%- for f in consolidated.findings %}
+
 ---
-### {{ f.id }}: {{ f.title }}
+### {{ f.id }}: {{ f.title | e }}
 
 | Field | Value |
 |-------|-------|
@@ -17,21 +22,20 @@
 | Domains | {{ f.domains | join(', ') }} |
 | Effort | {{ f.effort | default('unknown') }} |
 
-**Observation**: {{ f.observation }}
+**Observation**: {{ f.observation | e }}
 
-**Impact**: {{ f.impact }}
+**Impact**: {{ f.impact | e }}
+{%- if f.evidence %}
 
-{% if f.evidence %}
 **Evidence**:
-{% for e in f.evidence %}
-- `{{ e.file }}` lines {{ e.start_line }}-{{ e.end_line }}: {{ e.description }}
-{% endfor %}
-{% endif %}
+{%- for e in f.evidence %}
+- `{{ e.file | e }}` lines {{ e.start_line }}-{{ e.end_line }}: {{ e.description | e }}
+{%- endfor %}
+{%- endif %}
 
-**Recommendation**: {{ f.recommendation }}
+**Recommendation**: {{ f.recommendation | e }}
+{%- if f.get('challenger') is not none and f.get('challenger') %}
 
-{% if f.challenger %}
-**Challenger Decision**: {{ f.challenger.decision }} — {{ f.challenger.reasoning }}
-{% endif %}
-
-{% endfor %}
+**Challenger Decision**: {{ f.challenger.decision }} — {{ f.challenger.reasoning | e }}
+{%- endif %}
+{%- endfor %}

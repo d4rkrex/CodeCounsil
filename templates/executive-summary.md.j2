@@ -6,31 +6,36 @@
 
 ## General Posture
 
-{% if consolidated.by_severity.get('critical', 0) > 0 %}
-⛔ **CRITICAL** — {{ consolidated.by_severity.critical }} critical finding(s) require immediate attention.
-{% elif consolidated.by_severity.get('high', 0) > 0 %}
+{%- if consolidated.by_severity.get('critical', 0) > 0 %}
+⛔ **CRITICAL** — {{ consolidated.by_severity['critical'] }} critical finding(s) require immediate attention.
+{%- elif consolidated.by_severity.get('high', 0) > 0 %}
 🟠 **HIGH RISK** — {{ consolidated.by_severity.get('high', 0) }} high severity finding(s) identified.
-{% else %}
+{%- else %}
 🟡 **MODERATE** — No critical findings. Review recommended findings.
-{% endif %}
+{%- endif %}
 
 ## Finding Distribution
 
 | Severity | Count |
 |----------|-------|
-{% for sev in ['critical', 'high', 'medium', 'low', 'info'] %}
+{%- for sev in ['critical', 'high', 'medium', 'low', 'info'] %}
 | {{ sev | title }} | {{ consolidated.by_severity.get(sev, 0) }} |
-{% endfor %}
+{%- endfor %}
 
 ## Top Priority Findings
 
-{% for f in consolidated.findings[:5] %}
-### {{ f.id }}: {{ f.title }}
+{%- if consolidated.findings %}
+{%- for f in consolidated.findings[:5] %}
+
+### {{ f.id }}: {{ f.title | e }}
 - **Severity**: {{ f.severity }} | **Priority**: {{ f.priority }}
 - **Domains**: {{ f.domains | join(', ') }}
-- **Recommendation**: {{ f.recommendation }}
+- **Recommendation**: {{ f.recommendation | e }}
+{%- endfor %}
+{%- else %}
 
-{% endfor %}
+*No findings to report. Specialist prompts have been generated in `.review/raw/`. Run each specialist agent and re-run the pipeline to populate findings.*
+{%- endif %}
 
 ## Limitations
 

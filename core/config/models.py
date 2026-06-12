@@ -45,6 +45,12 @@ class SpecialistsConfig(BaseModel):
     developer: SpecialistConfig = Field(default_factory=SpecialistConfig)
     qa: SpecialistConfig = Field(default_factory=SpecialistConfig)
     security: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    ux: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    sre: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    finops: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    product: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    data_privacy: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    ai: SpecialistConfig = Field(default_factory=SpecialistConfig)
     # VT-Spec T-002: discovery, challenger, and consolidator are mandatory and not configurable.
 
 

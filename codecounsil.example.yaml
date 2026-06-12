@@ -20,6 +20,18 @@ specialists:
     enabled: true
   security:
     enabled: true
+  ux:
+    enabled: true
+  sre:
+    enabled: true
+  finops:
+    enabled: true
+  product:
+    enabled: true
+  data_privacy:
+    enabled: true
+  ai:
+    enabled: true
 
 security:
   focus:

@@ -24,17 +24,35 @@ This installs the core framework, development dependencies, and the `project-rev
 
 ## Usage
 
-Run a full review for the current repository:
+### How It Works (Three-Phase Model)
+
+CodeCounsil uses a **three-phase workflow**. Understanding this is key to getting results:
+
+```
+Phase 1 — Automated Setup
+  project-review full --repo .
+  → Discovers the project, runs deterministic tools
+  → Generates .review/raw/{specialist}.prompt.md for each specialist
+  → .review/ workspace is ready, but findings = 0 (expected!)
+
+Phase 2 — Specialist Analysis (LLM agents)
+  Each specialist reads their .prompt.md and writes findings to
+  .review/raw/{specialist}.json (via Claude Code, Codex, or manually)
+
+Phase 3 — Consolidation
+  project-review --consolidate-only --repo .
+  → Challenges all findings, deduplicates, prioritizes
+  → Generates .review/executive-summary.md, technical-report.md, backlog
+```
+
+The CLI shows guidance on next steps after Phase 1 runs.
+
+### CLI Commands
+
+Run a full review (Phase 1):
 
 ```bash
 project-review full
-```
-
-Run a focused review:
-
-```bash
-project-review security
-project-review architecture,developer
 ```
 
 Run with diff awareness relative to a branch:
@@ -43,13 +61,30 @@ Run with diff awareness relative to a branch:
 project-review full --diff main
 ```
 
+Run a focused review (fewer specialists):
+
+```bash
+project-review security
+project-review architecture,developer
+```
+
+After specialist agents write their findings (Phase 2), consolidate (Phase 3):
+
+```bash
+project-review --consolidate-only
+```
+
 Review another repository path:
 
 ```bash
 project-review full --repo /path/to/repository
 ```
 
-The CLI calls `core.orchestration.orchestrator.run_review()` and writes output into a fresh `.review/` workspace inside the target repository unless overridden by safe config.
+Use text output format:
+
+```bash
+project-review full --format text
+```
 
 ## Output Files Explained
 
