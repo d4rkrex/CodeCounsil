@@ -143,7 +143,7 @@ def _install_file(repo: Path, spec: dict, force: bool, dry_run: bool) -> int:
     mkdir: bool = spec.get("mkdir", False)
 
     if not src.exists():
-        print(f"  ⚠️  Source not found: {src.relative_to(_PACKAGE_ROOT)}")
+        print(f"  ⚠️  Source not found: {src}")
         return 0
 
     if dst.exists() and not force and not merge:
