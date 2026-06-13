@@ -1,19 +1,65 @@
 #!/usr/bin/env bash
 # ============================================================
-#  CodeCounsil — Installer
-#  Usage: ./install.sh
+#  CodeCounsil — Installer & Updater
+#  Usage:
+#    ./install.sh              # fresh install
+#    ./install.sh --update     # update to latest version
+#    ./install.sh --force      # overwrite everything
 # ============================================================
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GREEN="\033[0;32m"; YELLOW="\033[1;33m"; CYAN="\033[0;36m"
+GREEN="\033[0;32m"; YELLOW="\033[1;33m"; CYAN="\033[0;36m"; RED="\033[0;31m"
 BOLD="\033[1m"; RESET="\033[0m"
 
+# ── Parse flags ────────────────────────────────────────────
+MODE="install"   # install | update | force
+for arg in "$@"; do
+  case "$arg" in
+    --update|-u) MODE="update" ;;
+    --force|-f)  MODE="force"  ;;
+    --help|-h)
+      echo "Usage: ./install.sh [--update | --force]"
+      echo "  (no flag)  Fresh install — skips existing files"
+      echo "  --update   Pull latest code + update all adapter files"
+      echo "  --force    Overwrite all files without asking"
+      exit 0 ;;
+  esac
+done
+
 echo ""
-echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}║        CodeCounsil Installer             ║${RESET}"
-echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+if [[ "$MODE" == "update" ]]; then
+  echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+  echo -e "${BOLD}║       CodeCounsil — Update               ║${RESET}"
+  echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+elif [[ "$MODE" == "force" ]]; then
+  echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+  echo -e "${BOLD}║       CodeCounsil — Force Install        ║${RESET}"
+  echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+else
+  echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+  echo -e "${BOLD}║        CodeCounsil Installer             ║${RESET}"
+  echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+fi
 echo ""
+
+# ── 0. Git pull if updating ────────────────────────────────
+if [[ "$MODE" == "update" ]]; then
+  echo -e "${CYAN}▶ Pulling latest version from git...${RESET}"
+  if git -C "$REPO_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    CURRENT_COMMIT=$(git -C "$REPO_DIR" rev-parse --short HEAD)
+    git -C "$REPO_DIR" pull origin main --quiet
+    NEW_COMMIT=$(git -C "$REPO_DIR" rev-parse --short HEAD)
+    if [[ "$CURRENT_COMMIT" == "$NEW_COMMIT" ]]; then
+      echo -e "${GREEN}  ✓ Already up to date ($CURRENT_COMMIT)${RESET}"
+    else
+      echo -e "${GREEN}  ✓ Updated $CURRENT_COMMIT → $NEW_COMMIT${RESET}"
+    fi
+  else
+    echo -e "  ${YELLOW}Not a git repo — skipping git pull${RESET}"
+  fi
+  echo ""
+fi
 
 # ── 1. Install Python package ──────────────────────────────
 
@@ -126,6 +172,7 @@ PLATFORMS=""
 install_adapters() {
   local target="$1"
   local platforms="$2"
+  local force_mode="${3:-$MODE}"  # inherit global MODE
 
   for platform in $platforms; do
     case "$platform" in
@@ -144,7 +191,7 @@ install_adapters() {
         echo -e "    ${GREEN}✓${RESET} .claude/agents/  ($count specialist agents)"
         ;;
       copilot_cli)
-        # Copilot CLI skill — always global regardless of mode
+        # Copilot CLI skills — always global regardless of mode
         echo -e "  ${BOLD}GitHub Copilot CLI${RESET}"
         SKILL_DIR="$HOME/.copilot/skills/codecounsil"
         mkdir -p "$SKILL_DIR"
@@ -156,7 +203,7 @@ install_adapters() {
           COMBINED_DIR="$HOME/.copilot/skills/appsec-codecounsil"
           mkdir -p "$COMBINED_DIR"
           cp "$REPO_DIR/adapters/appsec-plugins/SKILL.md" "$COMBINED_DIR/SKILL.md"
-          echo -e "    ${GREEN}✓${RESET} ~/.copilot/skills/appsec-codecounsil/SKILL.md  (trigger: 'full security review' — combines both toolkits)"
+          echo -e "    ${GREEN}✓${RESET} ~/.copilot/skills/appsec-codecounsil/SKILL.md  (combined CodeCounsil + appsec-plugins)"
         fi
         ;;
       copilot)
@@ -168,7 +215,16 @@ install_adapters() {
           local marker="<!-- codecounsil-adapter -->"
           local dst="$target/.github/copilot-instructions.md"
           if [[ -f "$dst" ]] && grep -q "$marker" "$dst"; then
-            echo -e "    ${YELLOW}↩${RESET} .github/copilot-instructions.md — already present (skip)"
+            if [[ "$force_mode" == "update" || "$force_mode" == "force" ]]; then
+              # Remove old CodeCounsil section and re-add updated version
+              # Everything between marker and end of file is replaced
+              head_content=$(sed "/$marker/,\$d" "$dst")
+              printf "%s\n\n%s\n\n" "$head_content" "$marker" > "$dst"
+              cat "$REPO_DIR/adapters/github-copilot/copilot-instructions.md" >> "$dst"
+              echo -e "    ${GREEN}✓${RESET} .github/copilot-instructions.md  (updated)"
+            else
+              echo -e "    ${YELLOW}↩${RESET} .github/copilot-instructions.md — already present (use --update to refresh)"
+            fi
           elif [[ -f "$dst" ]]; then
             { echo ""; echo "$marker"; echo ""; cat "$REPO_DIR/adapters/github-copilot/copilot-instructions.md"; } >> "$dst"
             echo -e "    ${GREEN}✓${RESET} .github/copilot-instructions.md  (merged)"
@@ -186,7 +242,14 @@ install_adapters() {
           local marker="<!-- codecounsil-adapter -->"
           local dst="$target/AGENTS.md"
           if [[ -f "$dst" ]] && grep -q "$marker" "$dst"; then
-            echo -e "    ${YELLOW}↩${RESET} AGENTS.md — already present (skip)"
+            if [[ "$force_mode" == "update" || "$force_mode" == "force" ]]; then
+              head_content=$(sed "/$marker/,\$d" "$dst")
+              printf "%s\n\n%s\n\n" "$head_content" "$marker" > "$dst"
+              cat "$REPO_DIR/adapters/opencode/AGENTS.md" >> "$dst"
+              echo -e "    ${GREEN}✓${RESET} AGENTS.md  (updated)"
+            else
+              echo -e "    ${YELLOW}↩${RESET} AGENTS.md — already present (use --update to refresh)"
+            fi
           elif [[ -f "$dst" ]]; then
             { echo ""; echo "$marker"; echo ""; cat "$REPO_DIR/adapters/opencode/AGENTS.md"; } >> "$dst"
             echo -e "    ${GREEN}✓${RESET} AGENTS.md  (merged into existing file)"
@@ -209,9 +272,15 @@ fi
 # ── 6. Summary ─────────────────────────────────────────────
 
 echo ""
-echo -e "${GREEN}${BOLD}══════════════════════════════════════════${RESET}"
-echo -e "${GREEN}${BOLD}  ✓ CodeCounsil installed successfully!   ${RESET}"
-echo -e "${GREEN}${BOLD}══════════════════════════════════════════${RESET}"
+if [[ "$MODE" == "update" ]]; then
+  echo -e "${GREEN}${BOLD}══════════════════════════════════════════${RESET}"
+  echo -e "${GREEN}${BOLD}  ✓ CodeCounsil updated successfully!     ${RESET}"
+  echo -e "${GREEN}${BOLD}══════════════════════════════════════════${RESET}"
+else
+  echo -e "${GREEN}${BOLD}══════════════════════════════════════════${RESET}"
+  echo -e "${GREEN}${BOLD}  ✓ CodeCounsil installed successfully!   ${RESET}"
+  echo -e "${GREEN}${BOLD}══════════════════════════════════════════${RESET}"
+fi
 echo ""
 
 if [[ $HAS_CLAUDE      -eq 1 ]]; then
