@@ -1,0 +1,29 @@
+version: 2
+
+updates:
+  # Keep GitHub Actions pinned to latest SHAs automatically
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  # Keep Python dependencies up to date
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "deps"
+    labels:
+      - "dependencies"
+    ignore:
+      # Don't auto-update major versions — review manually
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
