@@ -1,0 +1,35 @@
+# Database Checklist
+
+- What database engines, ORMs, and migration mechanisms are actually in use across the repository?
+- Are responsibilities between domain logic, repositories, and persistence adapters explicit?
+- Are normalization choices intentional, and are denormalization tradeoffs documented where they improve performance?
+- Is JSONB or document-style storage used only where relational constraints would be counterproductive?
+- Are schema ownership boundaries clear across modules, services, or tenants?
+- Is there a migration tool (Alembic, Flyway, Liquibase) or are migrations manual ALTER TABLE scripts?
+- Does every migration have a downgrade/rollback path?
+- Is migration history ordered, reviewable, and reproducible across environments?
+- Are zero-downtime migration practices used for high-risk changes such as column renames, backfills, and constraint enforcement?
+- Are destructive migrations guarded by staged rollout, backfill, or fix-forward plans?
+- Are transaction boundaries explicit for multi-step writes and cross-table changes?
+- Are foreign keys, unique constraints, checks, cascades, and defaults enforcing data integrity instead of application assumptions?
+- Are idempotency, retries, and concurrent writes safe under the current isolation and locking model?
+- Are dashboard, analytics, and list-query access patterns protected against N+1 queries or repeated ORM round-trips?
+- Are indexes defined for columns used in dashboard queries, filters, and JOIN conditions beyond primary keys?
+- Are EXPLAIN plans, query-cost reviews, or slow-query evidence available for critical paths?
+- Are ORM lazy loading, implicit flushes, and row-by-row bulk operations creating avoidable latency?
+- Is connection pooling configured (PgBouncer, pgpool, or ORM pool settings)?
+- Are max connections, worker counts, and pool sizes aligned to avoid exhausting the database?
+- Is there evidence of connection leak detection, timeout tuning, or pool saturation monitoring?
+- Is backup automated with verified restore testing, not just manual pg_dump?
+- Are backup schedules, retention, and storage locations explicit and appropriate for the data criticality?
+- Is point-in-time recovery available where write durability matters?
+- Are RTO and RPO targets documented, observable, and tested through restore drills?
+- Are there read replicas to offload dashboard/analytics queries from write traffic?
+- Are failover procedures, replica lag monitoring, and HA assumptions explicit?
+- Is SQLite used in dev while PostgreSQL is used in production? Are the behavioral differences tested?
+- Do local Docker Compose or devcontainer definitions match production database engine, extensions, and auth expectations?
+- Are PostgreSQL-specific features such as JSONB, advisory locks, sequences, or RETURNING clauses avoided or tested in lower environments?
+- Are database users least-privilege by role, workload, and environment?
+- Are credentials rotated, stored securely, and excluded from source control and logs?
+- Is encryption at rest enabled or documented where the platform supports it?
+- Are slow query logging, `pg_stat_statements`, query monitoring, and storage/capacity trends visible to operators?

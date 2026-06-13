@@ -7,3 +7,15 @@
 - Responsive layouts across mobile, tablet, and desktop breakpoints
 - Loading, empty, success, and error states for user-facing views
 - User-flow friction, dead ends, and confusing navigation or hierarchy
+- Is microcopy specific and helpful for empty states, zero results, success confirmations, and loading messages?
+- Do destructive actions clearly communicate scope, consequences, and reversibility before execution?
+- Are confirmation dialogs used for delete, archive, send, or other irreversible or high-impact actions?
+- Is undo or recovery available when destructive actions can be safely reversed?
+- Are long-running actions using skeletons, optimistic updates, or progress indicators to improve perceived performance?
+- Do operations longer than one second communicate progress, waiting state, or next expected outcome?
+- Is internationalization readiness visible through non-hardcoded strings and locale-aware formatting?
+- Are date, time, currency, and number formats adaptable to locale instead of fixed assumptions?
+- Are RTL layouts, text expansion, and localization overflow risks considered in component structure?
+- Are touch targets at least 44px and usable on mobile or tablet interactions?
+- Do swipe, gesture, viewport, and scroll behaviors feel predictable on touch devices?
+- Do error states explain what went wrong, whether data was saved, and what the user should do next?

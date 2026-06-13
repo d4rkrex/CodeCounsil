@@ -10,3 +10,19 @@
 - Is state management localized and predictable?
 - Are extension points clear without introducing excessive abstraction?
 - Are architectural constraints visible in code rather than implicit tribal knowledge?
+- Are database and persistence boundaries explicit between domain logic, repositories, and storage concerns?
+- Are schema ownership, data models, and migration responsibilities aligned with service or module boundaries?
+- Are denormalization, caching, or materialized-view tradeoffs intentional and documented?
+- Are connection management and transaction patterns appropriate for the architecture and traffic model?
+- Are data access patterns resilient to N+1 queries, chatty APIs, or cross-service fan-out?
+- Are async workflows clear about ordering guarantees, retries, deduplication, and eventual consistency?
+- Is the event-driven design explicit about at-least-once vs exactly-once assumptions and compensating actions?
+- Are backpressure, queue growth, and consumer lag handled before they become systemic failures?
+- Is caching strategy documented with invalidation rules, ownership, and consistency expectations?
+- Are cache stampede protections, TTL defaults, and stale-read tradeoffs addressed?
+- Are circuit breakers, bulkheads, and timeout hierarchies applied consistently across dependencies?
+- Is graceful degradation defined for dependency outages, degraded data sources, or partial feature failure?
+- Are shared databases, shared schemas, or tight transitive dependencies creating hidden coupling?
+- Are circular dependencies or bidirectional ownership patterns creeping into module relationships?
+- Does each component expose enough logging, metrics, tracing, and debug context for diagnosis?
+- Are observability contracts sufficient for debugging, tracing critical flows, and capacity planning?

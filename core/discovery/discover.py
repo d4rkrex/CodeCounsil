@@ -4,6 +4,7 @@ from __future__ import annotations
 # VT-Spec T-001: discovery output is framework-generated, not repo content
 
 import os
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,6 +53,8 @@ AI_SIGNAL_SUFFIXES = {".py", ".ipynb", ".js", ".jsx", ".ts", ".tsx", ".toml", ".
 
 ENTRYPOINT_NAMES = {"app.py", "main.py", "server.py", "manage.py", "index.js", "main.ts"}
 CONFIG_SUFFIXES = {".yaml", ".yml", ".toml", ".ini", ".json", ".env"}
+COMPOSE_FILE_NAMES = {"docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"}
+VERSIONED_SQL_RE = re.compile(r"^V[^/]+\.sql$", re.IGNORECASE)
 
 
 def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict:
@@ -75,6 +78,14 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
         "has_ai_libraries": False,
         "ai_libraries": [],
         "auth_mechanisms": [],
+        "database_signals": {
+            "migration_tool": "unknown",
+            "connection_pooling": "unknown",
+            "dev_prod_mismatch": False,
+            "migration_tool_files": [],
+            "has_manual_migrations": False,
+            "has_no_pooling": False,
+        },
         "config_files": [],
         "dependency_managers": [],
         "file_count": 0,
@@ -102,6 +113,7 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
     test_locations: set[str] = set()
     frontend_frameworks: set[str] = set()
     ai_libraries: set[str] = set()
+    database_signal_observations = _init_database_signal_observations()
 
     file_count = 0
     total_size = 0
@@ -146,6 +158,7 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
                 ai_libraries,
                 context,
             )
+            _collect_database_signals(rel_file, content, database_signal_observations)
 
         if context["truncated"]:
             break
@@ -178,6 +191,7 @@ def discover_project(repo_path: Path, diff_branch: Optional[str] = None) -> dict
     context["tests"]["locations"] = sorted(test_locations)
     context["frontend"]["present"] = bool(frontend_frameworks)
     context["frontend"]["frameworks"] = sorted(frontend_frameworks)
+    context["database_signals"] = _finalize_database_signals(databases, database_signal_observations)
     return context
 
 
@@ -279,10 +293,8 @@ def _classify_content(
             entrypoints.add(rel_text)
         if "@app.get" in lower or "@router.get" in lower or "route(" in lower or "fastapi(" in lower:
             apis.add(rel_text)
-        if "sqlite:///" in lower:
-            databases.add("sqlite")
-        if "postgres" in lower:
-            databases.add("postgres")
+        for engine in _detect_database_engines(lower):
+            databases.add(engine)
         if "sqlalchemy" in lower:
             databases.add("sqlalchemy")
         if "requests." in lower or "httpx." in lower or "boto3" in lower or "stripe" in lower:
@@ -311,6 +323,118 @@ def _classify_content(
         for library, indicators in AI_LIBRARY_INDICATORS.items():
             if any(indicator in lower for indicator in indicators):
                 ai_libraries.add(library)
+
+
+def _init_database_signal_observations() -> dict:
+    return {
+        "migration_tools": {
+            "alembic": set(),
+            "flyway": set(),
+            "liquibase": set(),
+            "flyway-style": set(),
+        },
+        "connection_pooling": {
+            "pgbouncer": set(),
+            "pgpool": set(),
+            "sqlalchemy_pool": set(),
+        },
+        "all_databases": set(),
+        "compose_databases": set(),
+        "non_compose_databases": set(),
+    }
+
+
+def _collect_database_signals(rel_file: Path, content: str, observations: dict) -> None:
+    lower = content.lower()
+    rel_text = str(rel_file)
+
+    if rel_file.name == "alembic.ini" or rel_text.endswith("migrations/env.py"):
+        observations["migration_tools"]["alembic"].add(rel_text)
+    if rel_file.name == "flyway.conf" or (rel_file.parts[:2] == ("db", "migration") and rel_file.suffix.lower() == ".sql"):
+        observations["migration_tools"]["flyway"].add(rel_text)
+    if rel_file.name == "liquibase.properties":
+        observations["migration_tools"]["liquibase"].add(rel_text)
+    if rel_file.suffix.lower() == ".sql" and VERSIONED_SQL_RE.match(rel_file.name) and rel_file.parts[:1] and rel_file.parts[0] in {"db", "migrations"}:
+        observations["migration_tools"]["flyway-style"].add(rel_text)
+
+    if rel_file.name == "pgbouncer.ini" or (
+        "pgbouncer" in lower and (rel_file.name in COMPOSE_FILE_NAMES or rel_file.suffix.lower() in CONFIG_SUFFIXES)
+    ):
+        observations["connection_pooling"]["pgbouncer"].add(rel_text)
+    if rel_file.name == "pgpool.conf" or "PGPOOL" in content or "pgpool" in lower:
+        observations["connection_pooling"]["pgpool"].add(rel_text)
+    if ("pool_size" in lower or "max_overflow" in lower) and ("sqlalchemy" in lower or "create_engine(" in lower):
+        observations["connection_pooling"]["sqlalchemy_pool"].add(rel_text)
+
+    detected_engines = _detect_database_engines(lower)
+    if not detected_engines:
+        return
+
+    observations["all_databases"].update(detected_engines)
+    if rel_file.name.lower() in COMPOSE_FILE_NAMES:
+        observations["compose_databases"].update(detected_engines)
+    else:
+        observations["non_compose_databases"].update(detected_engines)
+
+
+def _detect_database_engines(lower: str) -> set[str]:
+    engines: set[str] = set()
+    if "sqlite:///" in lower or "sqlite+" in lower or "import sqlite3" in lower:
+        engines.add("sqlite")
+    if any(token in lower for token in ("postgres://", "postgresql://", "postgres:", "postgres ", "postgres\n", "asyncpg", "psycopg")):
+        engines.add("postgres")
+    if any(token in lower for token in ("mysql://", "mysql+", "mysql:", "pymysql", "mysqldb", "mysql.connector")):
+        engines.add("mysql")
+    if "mariadb://" in lower or "mariadb:" in lower:
+        engines.add("mariadb")
+    return engines
+
+
+def _finalize_database_signals(databases: set[str], observations: dict) -> dict:
+    database_names = {name for name in databases if name != "sqlalchemy"}
+    detected_databases = database_names | observations["all_databases"]
+
+    migration_tool = "unknown"
+    migration_tool_files: list[str] = []
+    for tool_name in ("alembic", "flyway", "liquibase", "flyway-style"):
+        files = observations["migration_tools"][tool_name]
+        if files:
+            migration_tool = "flyway" if tool_name == "flyway-style" else tool_name
+            migration_tool_files = sorted(files)
+            break
+
+    has_manual_migrations = False
+    if detected_databases and migration_tool == "unknown":
+        migration_tool = "manual"
+        has_manual_migrations = True
+
+    connection_pooling = "unknown"
+    has_no_pooling = False
+    for tool_name in ("pgbouncer", "pgpool", "sqlalchemy_pool"):
+        files = observations["connection_pooling"][tool_name]
+        if files:
+            connection_pooling = tool_name
+            break
+    if detected_databases and connection_pooling == "unknown":
+        connection_pooling = "none"
+        has_no_pooling = True
+
+    dev_prod_mismatch = (
+        "sqlite" in detected_databases and bool({"postgres", "mysql", "mariadb"} & detected_databases)
+    ) or (
+        bool(observations["compose_databases"])
+        and bool(observations["non_compose_databases"])
+        and observations["compose_databases"] != observations["non_compose_databases"]
+    )
+
+    return {
+        "migration_tool": migration_tool,
+        "connection_pooling": connection_pooling,
+        "dev_prod_mismatch": dev_prod_mismatch,
+        "migration_tool_files": migration_tool_files,
+        "has_manual_migrations": has_manual_migrations,
+        "has_no_pooling": has_no_pooling,
+    }
 
 
 def _read_snippet(file_path: Path) -> str:

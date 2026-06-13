@@ -12,3 +12,15 @@
 - Are disaster-recovery expectations, backup coverage, and RTO/RPO targets defined?
 - Are SLO/SLA targets, alert thresholds, or error-budget expectations visible?
 - Are incident runbooks complete enough to cover detection, triage, rollback, escalation, and recovery for common failure modes?
+- Is database connection pooling configured intentionally, including pool sizing and overflow behavior?
+- Are database max connections, application pool sizes, and worker counts aligned to avoid exhaustion?
+- Is connection leak detection or pool saturation monitoring in place for application and job workloads?
+- Are backups automated on a schedule rather than relying on manual `pg_dump` or ad hoc snapshots?
+- Are backup verification and restore drills performed and documented with evidence of tested recovery?
+- Are RTO/RPO targets explicit, observable, and tied to restoration procedures?
+- Is dev/prod parity maintained for the database engine, extensions, and operational behavior?
+- Are known dev/prod database differences documented and tested when exact parity is not possible?
+- Are secret rotation procedures documented for database credentials, API tokens, and certificates?
+- Is certificate expiry monitored with automated renewal or clear escalation paths?
+- Are DB, cache, and queue capacity thresholds defined to trigger scale-out, failover, or throttling decisions?
+- Are scaling decisions supported by concrete saturation metrics instead of intuition alone?

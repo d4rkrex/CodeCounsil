@@ -22,6 +22,7 @@
 | report-consolidator | - | always | ✅ |
 | ux-reviewer | ux | `project_context["frontend"]["present"]` | — |
 | sre-reviewer | sre | IaC or pipelines detected | — |
+| database-reviewer | database | `project_context["databases"]` or strong database-risk signals | — |
 | finops-reviewer | finops | Terraform or CloudFormation detected | — |
 | product-reviewer | product | documentation present | — |
 | data-privacy-reviewer | data_privacy | always when requested | — |

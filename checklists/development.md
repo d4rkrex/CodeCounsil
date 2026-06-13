@@ -10,3 +10,21 @@
 - Are dependencies used coherently without unnecessary indirection?
 - Is public behavior documented for future maintainers?
 - Are low-confidence observations clearly marked as hypotheses?
+- Are logs structured, consistently keyed, and emitted at appropriate severity levels?
+- Do logs avoid PII, secrets, tokens, and raw credential material?
+- Are correlation IDs or request IDs propagated across async jobs, queues, and outbound calls?
+- Is shared mutable state protected against race conditions, re-entrancy bugs, or thread-safety gaps?
+- Are lock scope, lock duration, and deadlock risks minimized and easy to reason about?
+- Are connection pools, sockets, and client objects reused instead of recreated per request?
+- Are file handles, streams, subprocesses, and external resources always cleaned up deterministically?
+- Are context managers, finally blocks, or explicit close paths used where resource leaks are possible?
+- Are database access paths reviewed for N+1 patterns, repeated lookups, or unnecessary chattiness?
+- Are bulk operations used where row-by-row ORM writes would create latency or transaction risk?
+- Are ORM lazy-loading defaults, implicit flushes, or eager loading choices safe for hot paths?
+- Are raw SQL queries parameterized, bounded, and isolated from string-concatenation hazards?
+- Are configuration values externalized instead of hardcoded URLs, credentials, regions, or magic numbers?
+- Are secrets loaded through environment variables or secret managers instead of source-controlled defaults?
+- Are dependencies pinned or constrained intentionally, with obvious signals for stale or vulnerable packages?
+- Are unused dependencies, dead integrations, or speculative abstractions left behind in the codebase?
+- Is it clear which errors are user-facing versus internal-only diagnostics?
+- Are alert-worthy failures differentiated from expected validation errors and logged-only conditions?

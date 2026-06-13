@@ -9,3 +9,18 @@
 - Are missing tests traceable to concrete product or security risks?
 - Is setup and teardown isolated enough to avoid cross-test pollution?
 - Are manual verification steps documented when automation is missing?
+- Do tests exercise migrations both up and down, including rollback or downgrade behavior?
+- Are schema changes tested in isolation before being combined with unrelated feature changes?
+- Are migration failures, partial-apply scenarios, and data backfills covered by automated checks?
+- Are performance baselines defined for critical user flows, background jobs, and expensive queries?
+- Are load, stress, soak, or concurrency tests present for high-risk paths where latency or contention matters?
+- Are P95/P99 latencies or throughput thresholds measured and compared over time?
+- Are API or event contracts tested between producer and consumer rather than only within each codebase?
+- Are schema-validation or compatibility tests guarding against breaking changes for clients and integrations?
+- Are fixtures and factories realistic enough to surface pagination, indexing, or authorization edge cases?
+- Is production data prohibited from tests unless anonymized and explicitly approved?
+- Are anonymization, masking, or synthetic-data rules enforced for snapshots and test datasets?
+- Are flaky tests tracked, quarantined when necessary, and assigned owners instead of being ignored?
+- Is flakiness visible in CI results with actionable signals rather than silent reruns?
+- Are there explicit security tests for auth boundaries, injection, rate limits, and privilege escalation paths?
+- Do tests cover failure handling for third-party outages, timeouts, retries, and partial writes?

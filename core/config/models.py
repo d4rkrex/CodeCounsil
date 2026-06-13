@@ -49,6 +49,7 @@ class SpecialistsConfig(BaseModel):
     security: SpecialistConfig = Field(default_factory=SpecialistConfig)
     ux: SpecialistConfig = Field(default_factory=SpecialistConfig)
     sre: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    database: SpecialistConfig = Field(default_factory=SpecialistConfig)
     finops: SpecialistConfig = Field(default_factory=SpecialistConfig)
     product: SpecialistConfig = Field(default_factory=SpecialistConfig)
     data_privacy: SpecialistConfig = Field(default_factory=SpecialistConfig)

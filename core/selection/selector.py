@@ -6,13 +6,16 @@ from ..manifest.manifest import ExecutionManifest
 from .profiles import PROFILES, get_profile
 
 MVP_SPECIALISTS = ["architecture", "developer", "qa", "security"]
-V11_SPECIALISTS = ["ux", "sre", "finops", "product", "data_privacy", "ai", "api_design", "ai_security", "ai_quality"]
+V11_SPECIALISTS = ["ux", "sre", "database", "finops", "product", "data_privacy", "ai", "api_design", "ai_security", "ai_quality"]
 DOMAIN_SPECIALISTS = MVP_SPECIALISTS + V11_SPECIALISTS
 MANDATORY_SPECIALISTS = ["discovery", "challenger", "consolidator"]
 SPECIALIST_CONDITIONS = {
     "qa": lambda ctx: ctx.get("tests", {}).get("present", False),
     "ux": lambda ctx: ctx.get("frontend", {}).get("present", False),
     "sre": lambda ctx: bool(ctx.get("iac") or ctx.get("pipelines")),
+    "database": lambda ctx: bool(ctx.get("databases"))
+    or ctx.get("database_signals", {}).get("has_manual_migrations", False)
+    or ctx.get("database_signals", {}).get("dev_prod_mismatch", False),
     "finops": lambda ctx: any(
         "terraform" in str(file_name).lower() or "cloudformation" in str(file_name).lower()
         for file_name in ctx.get("iac", [])
@@ -28,6 +31,7 @@ EXCLUSION_REASONS = {
     "qa": "No test infrastructure detected",
     "ux": "No frontend detected",
     "sre": "No IaC or deployment pipeline detected",
+    "database": "No database footprint or database risk signals detected",
     "finops": "No Terraform or CloudFormation detected",
     "product": "No project documentation detected",
     "ai": "No AI/ML libraries detected",
@@ -43,6 +47,7 @@ MODE_MAP = {
     "security": ["security"],
     "ux": ["ux"],
     "sre": ["sre"],
+    "database": ["database"],
     "finops": ["finops"],
     "product": ["product"],
     "data_privacy": ["data_privacy"],
