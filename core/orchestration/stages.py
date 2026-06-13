@@ -91,6 +91,19 @@ class EvidenceCollectionStage(PipelineStage):
     def run(self, ctx: PipelineContext) -> None:
         stage = ctx.manifest.data["stages"][-1]
         ctx.tool_results = collect_evidence(ctx.repo_path, ctx.config.tools, stage, ctx.manifest, ctx.workspace)
+        
+        # Detect appsec-plugins and add to tool_results as advisory info
+        from ..reporting.appsec_bridge import detect_appsec_plugins
+        appsec_info = detect_appsec_plugins()
+        ctx.tool_results["_appsec_plugins"] = {
+            "tool": "appsec-plugins",
+            "detected": appsec_info["installed"],
+            "executed": False,
+            "capabilities": appsec_info["capabilities"],
+            "suggestion": appsec_info["suggestion"],
+            "errors": None,
+        }
+        
         ctx.manifest.log_artifact(stage, "tool-results.json", ctx.workspace / "tools" / "results.json")
 
 

@@ -89,6 +89,9 @@ def build_specialist_prompt(
     if evidence:
         lines.append("## TOOL EVIDENCE")
         for tool_name, result in evidence.items():
+            # Skip internal advisory entries (prefixed with _)
+            if tool_name.startswith("_"):
+                continue
             if not result.get("detected"):
                 continue
             lines.append(f"### {tool_name}")
@@ -97,6 +100,25 @@ def build_specialist_prompt(
             else:
                 lines.append(wrap_repo_content("No output captured.", f"tool:{tool_name}"))
             lines.append("")
+
+    # For security specialist: inject appsec-plugins advisory if available
+    if specialist in ("security", "appsec-reviewer", "ai_security"):
+        appsec_info = evidence.get("_appsec_plugins", {})
+        if appsec_info.get("detected"):
+            caps = appsec_info.get("capabilities", [])
+            lines.extend([
+                "## APPSEC-PLUGINS AVAILABLE",
+                "The appsec-plugins toolkit is installed in this environment.",
+                f"Available capabilities: {', '.join(caps) if caps else 'threat-model, owasp-api, dependency-sca'}",
+                "",
+                "Integration recommendation:",
+                "- You MAY run @appsec-tm for deep STRIDE+DREAD threat modeling",
+                "- You MAY run owasp-api skill for OWASP API Security Top 10 analysis",
+                "- After running appsec-plugins, convert its findings to CC schema and include in your output",
+                "- See adapters/appsec-plugins/SKILL.md for conversion format",
+                "- If you run appsec-plugins tools, set external_source field to 'appsec-plugins/<capability>'",
+                "",
+            ])
 
     lines.extend(
         [

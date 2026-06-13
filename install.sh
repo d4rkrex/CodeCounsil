@@ -150,6 +150,14 @@ install_adapters() {
         mkdir -p "$SKILL_DIR"
         cp "$REPO_DIR/adapters/copilot-cli/SKILL.md" "$SKILL_DIR/SKILL.md"
         echo -e "    ${GREEN}✓${RESET} ~/.copilot/skills/codecounsil/SKILL.md  (trigger: 'run a CodeCounsil review')"
+        # Also install combined skill if appsec-plugins is installed
+        if [[ -d "$HOME/.copilot/installed-plugins/appsec-plugins" ]] || \
+           ls "$HOME/.copilot/skills/" 2>/dev/null | grep -q "appsec"; then
+          COMBINED_DIR="$HOME/.copilot/skills/appsec-codecounsil"
+          mkdir -p "$COMBINED_DIR"
+          cp "$REPO_DIR/adapters/appsec-plugins/SKILL.md" "$COMBINED_DIR/SKILL.md"
+          echo -e "    ${GREEN}✓${RESET} ~/.copilot/skills/appsec-codecounsil/SKILL.md  (trigger: 'full security review' — combines both toolkits)"
+        fi
         ;;
       copilot)
         echo -e "  ${BOLD}GitHub Copilot${RESET}"
