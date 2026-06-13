@@ -12,17 +12,17 @@ from typing import Optional
 from ..config.loader import hash_config, load_config
 from ..manifest.manifest import ExecutionManifest
 from ..output.workspace import create_safe_workspace, safe_write
+from ..selection.profiles import get_profile
 from ..validation.validator import validate_findings
-from ..consolidation.consolidator import consolidate
-from ..reporting.reporter import render_executive_summary, render_technical_report, render_backlog, render_limitations
 from .pipeline import PipelineContext
 from .stages import (
-    build_full_pipeline,
-    build_consolidate_pipeline,
+    CHECKLIST_MAP,
+    SPECIALIST_AGENT_MAP,
+    _build_consolidated_output,
     _collect_raw_findings,
     _load_or_default_challenged,
-    SPECIALIST_AGENT_MAP,
-    CHECKLIST_MAP,
+    _write_reporting_artifacts,
+    build_full_pipeline,
 )
 
 # Re-export constants so existing imports don't break
@@ -42,6 +42,7 @@ def run_review(repo_path_str: str, mode: str = "full", diff_branch: Optional[str
     repo_path = Path(repo_path_str).resolve()
     config, rejected_overrides = load_config(repo_path)
     workspace = create_safe_workspace(repo_path, config.review.output_directory)
+    profile_name = mode if get_profile(mode) else None
     manifest = ExecutionManifest(
         workspace=workspace,
         mode=mode,
@@ -51,6 +52,9 @@ def run_review(repo_path_str: str, mode: str = "full", diff_branch: Optional[str
     )
     for key, value in rejected_overrides.items():
         manifest.log_rejected_config(key, value)
+    if profile_name:
+        manifest.data["change"]["profile"] = profile_name
+        manifest._flush()
 
     ctx = PipelineContext(
         repo_path=repo_path,
@@ -59,6 +63,7 @@ def run_review(repo_path_str: str, mode: str = "full", diff_branch: Optional[str
         workspace=workspace,
         config=config,
         manifest=manifest,
+        profile=profile_name,
     )
 
     try:
@@ -121,13 +126,17 @@ def run_consolidate_only(repo_path_str: str) -> dict:
         ]
 
     safe_write(workspace, "challenged-findings.json", json.dumps(challenged, indent=2))
-    consolidated = consolidate(challenged)
+    consolidated = _build_consolidated_output(workspace, challenged)
     safe_write(workspace, "consolidated-findings.json", json.dumps(consolidated, indent=2))
 
-    safe_write(workspace, "executive-summary.md", render_executive_summary(consolidated, project_context, config))
-    safe_write(workspace, "technical-report.md", render_technical_report(consolidated, project_context))
-    safe_write(workspace, "prioritized-backlog.md", render_backlog(consolidated))
-    safe_write(workspace, "limitations.md", render_limitations(manifest_data, tool_results))
+    _write_reporting_artifacts(
+        workspace=workspace,
+        consolidated=consolidated,
+        project_context=project_context,
+        config=config,
+        manifest_data=manifest_data,
+        tool_results=tool_results,
+    )
 
     return {
         "status": "complete",
@@ -137,5 +146,6 @@ def run_consolidate_only(repo_path_str: str) -> dict:
         "next_steps": [
             f"Review {workspace}/executive-summary.md",
             f"Review {workspace}/prioritized-backlog.md for action items",
+            f"Review {workspace}/remediation-plan.md for P1/P2 fixes",
         ],
     }

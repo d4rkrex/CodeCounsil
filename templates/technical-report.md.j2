@@ -2,6 +2,22 @@
 
 **Repository**: {{ project.repo_path }}
 
+## Cross-domain Contradictions
+
+{%- if consolidated.contradictions %}
+{%- for contradiction in consolidated.contradictions %}
+
+### {{ contradiction.id }}: {{ contradiction.title | e }}
+- **Domains**: {{ contradiction.domains | join(', ') }}
+- **Findings**: {{ contradiction.findings | join(', ') }}
+- **Description**: {{ contradiction.description | e }}
+- **Recommendation**: {{ contradiction.recommendation | e }}
+{%- endfor %}
+{%- else %}
+
+*No cross-domain contradictions detected.*
+{%- endif %}
+
 ## All Confirmed Findings
 
 {%- if not consolidated.findings %}

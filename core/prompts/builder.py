@@ -68,6 +68,17 @@ def build_specialist_prompt(
         f"- Entrypoints: {', '.join(project_context.get('entrypoints', [])) or 'none detected'}",
         "",
     ]
+    profile = project_context.get("review_profile")
+    if profile:
+        lines.extend(
+            [
+                "## REVIEW PROFILE (framework-generated)",
+                f"- Name: {profile.get('name', 'unknown')}",
+                f"- Description: {profile.get('description', 'n/a')}",
+                f"- Focus: {', '.join(profile.get('focus', [])) or 'n/a'}",
+                "",
+            ]
+        )
 
     if agent_instructions:
         lines.extend(["## AGENT INSTRUCTIONS", agent_instructions.strip(), ""])

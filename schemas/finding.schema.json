@@ -42,7 +42,10 @@
           "finops",
           "product",
           "data_privacy",
-          "ai"
+          "ai",
+          "api_design",
+          "ai_security",
+          "ai_quality"
         ]
       }
     },

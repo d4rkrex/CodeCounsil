@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from core.config.models import CodeCounsilConfig
@@ -91,3 +93,27 @@ def test_data_privacy_always_selected_in_full_mode(tmp_path: Path) -> None:
     manifest = make_manifest(tmp_path)
     selected = select_specialists("full", {}, CodeCounsilConfig(), manifest)
     assert "data_privacy" in selected
+
+
+def test_new_api_profile_selects_profile_specialists_when_conditions_match(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    context = {"apis": ["app.py"], "tests": {"present": True}}
+    selected = select_specialists("new-api", context, CodeCounsilConfig(), manifest)
+    assert "architecture" in selected
+    assert "developer" in selected
+    assert "security" in selected
+    assert "api_design" in selected
+
+
+def test_api_design_is_excluded_when_no_api_surface_is_detected(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    selected = select_specialists("api_design", {"apis": []}, CodeCounsilConfig(), manifest)
+    assert "api_design" not in selected
+
+
+def test_ai_security_and_quality_are_selected_when_ai_libraries_are_present(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path)
+    context = {"has_ai_libraries": True}
+    selected = select_specialists("ai_security,ai_quality", context, CodeCounsilConfig(), manifest)
+    assert "ai_security" in selected
+    assert "ai_quality" in selected

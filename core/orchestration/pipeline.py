@@ -29,6 +29,7 @@ class PipelineContext:
     workspace: Path
     config: CodeCounsilConfig
     manifest: ExecutionManifest
+    profile: Optional[str] = None
 
     # ── Populated by stages ───────────────────────────────────────────
     project_context: dict = field(default_factory=dict)
@@ -40,7 +41,6 @@ class PipelineContext:
 
     def result(self) -> dict:
         """Build the final return dict for run_review()."""
-        from ..output.workspace import safe_write as _sw  # avoid circular at module level
         prompts = list((self.workspace / "raw").glob("*.prompt.md"))
         next_steps = []
         if self.consolidated.get("total_findings", 0) == 0 and prompts:
@@ -49,6 +49,7 @@ class PipelineContext:
         else:
             next_steps.append(f"Review {self.workspace}/executive-summary.md")
             next_steps.append(f"Review {self.workspace}/prioritized-backlog.md for action items")
+            next_steps.append(f"Review {self.workspace}/remediation-plan.md for P1/P2 fixes")
         return {
             "status": "complete",
             "run_id": self.manifest.run_id,

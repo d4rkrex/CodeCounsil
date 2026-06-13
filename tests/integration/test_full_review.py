@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
 
@@ -21,6 +23,7 @@ def test_full_review_generates_expected_artifacts(simple_api_repo: Path) -> None
         "technical-report.md",
         "prioritized-backlog.md",
         "limitations.md",
+        "remediation-plan.md",
     ]:
         assert (workspace / name).exists(), name
 
@@ -103,6 +106,8 @@ def test_consolidate_only_with_prepopulated_findings(simple_api_repo: Path) -> N
 
     summary = (workspace / "executive-summary.md").read_text()
     assert "CC-SEC-001" in summary
+    assert (workspace / "remediation-plan.md").exists()
+    assert (workspace / "issues" / "CC-SEC-001.md").exists()
 
 
 def test_next_steps_guidance_when_no_findings(simple_api_repo: Path) -> None:

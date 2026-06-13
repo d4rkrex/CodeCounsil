@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum
 from typing import List, Optional
 
@@ -51,6 +53,9 @@ class SpecialistsConfig(BaseModel):
     product: SpecialistConfig = Field(default_factory=SpecialistConfig)
     data_privacy: SpecialistConfig = Field(default_factory=SpecialistConfig)
     ai: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    api_design: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    ai_security: SpecialistConfig = Field(default_factory=SpecialistConfig)
+    ai_quality: SpecialistConfig = Field(default_factory=SpecialistConfig)
     # VT-Spec T-002: discovery, challenger, and consolidator are mandatory and not configurable.
 
 

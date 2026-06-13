@@ -3,6 +3,10 @@
 **Repository**: {{ project.repo_path }}  
 **Review Date**: {{ project.generated_at }}  
 **Total Findings**: {{ consolidated.total_findings }}
+{%- if consolidated.contradictions %}
+
+**Cross-domain Contradictions**: {{ consolidated.contradictions | length }}
+{%- endif %}
 
 ## General Posture
 
@@ -35,6 +39,13 @@
 {%- else %}
 
 *No findings to report. Specialist prompts have been generated in `.review/raw/`. Run each specialist agent and re-run the pipeline to populate findings.*
+{%- endif %}
+
+{%- if consolidated.contradictions %}
+
+## Cross-domain Trade-offs
+
+{{ consolidated.contradictions | length }} contradiction(s) require explicit decision-making across disciplines before implementation proceeds.
 {%- endif %}
 
 ## Limitations

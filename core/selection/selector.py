@@ -3,9 +3,10 @@ from __future__ import annotations
 # FR-4: Specialist selection with reason logging
 
 from ..manifest.manifest import ExecutionManifest
+from .profiles import PROFILES, get_profile
 
 MVP_SPECIALISTS = ["architecture", "developer", "qa", "security"]
-V11_SPECIALISTS = ["ux", "sre", "finops", "product", "data_privacy", "ai"]
+V11_SPECIALISTS = ["ux", "sre", "finops", "product", "data_privacy", "ai", "api_design", "ai_security", "ai_quality"]
 DOMAIN_SPECIALISTS = MVP_SPECIALISTS + V11_SPECIALISTS
 MANDATORY_SPECIALISTS = ["discovery", "challenger", "consolidator"]
 SPECIALIST_CONDITIONS = {
@@ -19,6 +20,9 @@ SPECIALIST_CONDITIONS = {
     "product": lambda ctx: bool(ctx.get("documentation")),
     "data_privacy": lambda ctx: True,
     "ai": lambda ctx: ctx.get("has_ai_libraries", False),
+    "api_design": lambda ctx: bool(ctx.get("apis")),
+    "ai_security": lambda ctx: ctx.get("has_ai_libraries", False),
+    "ai_quality": lambda ctx: ctx.get("has_ai_libraries", False),
 }
 EXCLUSION_REASONS = {
     "qa": "No test infrastructure detected",
@@ -27,6 +31,9 @@ EXCLUSION_REASONS = {
     "finops": "No Terraform or CloudFormation detected",
     "product": "No project documentation detected",
     "ai": "No AI/ML libraries detected",
+    "api_design": "No API surface detected",
+    "ai_security": "No AI/ML libraries detected",
+    "ai_quality": "No AI/ML libraries detected",
 }
 MODE_MAP = {
     "full": DOMAIN_SPECIALISTS,
@@ -40,12 +47,16 @@ MODE_MAP = {
     "product": ["product"],
     "data_privacy": ["data_privacy"],
     "ai": ["ai"],
+    "api_design": ["api_design"],
+    "ai_security": ["ai_security"],
+    "ai_quality": ["ai_quality"],
 }
 
 
 def select_specialists(mode: str, project_context: dict, config, manifest: ExecutionManifest) -> list[str]:
     requested = _requested_specialists(mode)
     selected: list[str] = []
+    profile = get_profile(mode)
 
     for specialist in DOMAIN_SPECIALISTS:
         if specialist not in requested:
@@ -59,7 +70,10 @@ def select_specialists(mode: str, project_context: dict, config, manifest: Execu
         if condition and not condition(project_context):
             manifest.log_specialist_excluded(specialist, EXCLUSION_REASONS.get(specialist, "Selection conditions not met"))
             continue
-        manifest.log_specialist_selected(specialist, f"Requested in mode={mode}")
+        if profile:
+            manifest.log_specialist_selected(specialist, f"Requested by profile={mode}")
+        else:
+            manifest.log_specialist_selected(specialist, f"Requested in mode={mode}")
         selected.append(specialist)
 
     # VT-Spec T-002: mandatory phases remain enforced separately from optional domain specialists, including v1.1 reviewers.
@@ -73,6 +87,8 @@ def select_specialists(mode: str, project_context: dict, config, manifest: Execu
 
 def _requested_specialists(mode: str) -> list[str]:
     normalized = (mode or "full").strip().lower()
+    if normalized in PROFILES:
+        return [item for item in PROFILES[normalized]["specialists"] if item in DOMAIN_SPECIALISTS]
     if "," in normalized:
         requested = [item.strip() for item in normalized.split(",") if item.strip()]
         return [item for item in requested if item in DOMAIN_SPECIALISTS]

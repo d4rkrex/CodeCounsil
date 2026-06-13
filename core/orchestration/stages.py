@@ -10,17 +10,21 @@ testable. Stages share state through PipelineContext.
 import json
 from pathlib import Path
 
+from ..consolidation.challenger_debate import selective_debate
 from ..consolidation.consolidator import consolidate
+from ..consolidation.cross_domain import detect_contradictions
 from ..discovery.discover import discover_project
 from ..evidence.collector import collect_evidence
 from ..output.workspace import safe_write
 from ..prompts.builder import build_specialist_prompt
+from ..reporting.remediation import generate_issue_templates, generate_remediation_plan
 from ..reporting.reporter import (
     render_backlog,
     render_executive_summary,
     render_limitations,
     render_technical_report,
 )
+from ..selection.profiles import get_profile
 from ..selection.selector import select_specialists
 from ..validation.validator import validate_findings
 from .pipeline import PipelineContext, PipelineStage
@@ -41,6 +45,9 @@ SPECIALIST_AGENT_MAP = {
     "product": "product-reviewer",
     "data_privacy": "data-privacy-reviewer",
     "ai": "ai-reviewer",
+    "api_design": "api-design-reviewer",
+    "ai_security": "ai-security-reviewer",
+    "ai_quality": "ai-quality-reviewer",
     "discovery": "project-discovery",
     "challenger": "findings-challenger",
     "consolidator": "report-consolidator",
@@ -57,6 +64,9 @@ CHECKLIST_MAP = {
     "product": _CHECKLIST_DIR / "product.md",
     "data_privacy": _CHECKLIST_DIR / "data-privacy.md",
     "ai": _CHECKLIST_DIR / "ai.md",
+    "api_design": _CHECKLIST_DIR / "api-design.md",
+    "ai_security": _CHECKLIST_DIR / "ai-security.md",
+    "ai_quality": _CHECKLIST_DIR / "ai-quality.md",
 }
 
 
@@ -89,7 +99,14 @@ class SpecialistSelectionStage(PipelineStage):
     description = "FR-4: Specialist selection"
 
     def run(self, ctx: PipelineContext) -> None:
-        ctx.selected = select_specialists(ctx.mode, ctx.project_context, ctx.config, ctx.manifest)
+        if ctx.profile:
+            profile = get_profile(ctx.profile) or {}
+            ctx.project_context["review_profile"] = {
+                "name": ctx.profile,
+                "description": profile.get("description"),
+                "focus": profile.get("focus", []),
+            }
+        ctx.selected = select_specialists(ctx.profile or ctx.mode, ctx.project_context, ctx.config, ctx.manifest)
 
 
 class SpecialistPrepStage(PipelineStage):
@@ -149,7 +166,7 @@ class ConsolidationStage(PipelineStage):
     description = "FR-7: Consolidation"
 
     def run(self, ctx: PipelineContext) -> None:
-        ctx.consolidated = consolidate(ctx.challenged)
+        ctx.consolidated = _build_consolidated_output(ctx.workspace, ctx.challenged)
         safe_write(ctx.workspace, "consolidated-findings.json", json.dumps(ctx.consolidated, indent=2))
         ctx.manifest.log_artifact(
             ctx.manifest.data["stages"][-1],
@@ -163,12 +180,16 @@ class ReportingStage(PipelineStage):
     description = "FR-9: Reporting"
 
     def run(self, ctx: PipelineContext) -> None:
-        safe_write(ctx.workspace, "executive-summary.md", render_executive_summary(ctx.consolidated, ctx.project_context, ctx.config))
-        safe_write(ctx.workspace, "technical-report.md", render_technical_report(ctx.consolidated, ctx.project_context))
-        safe_write(ctx.workspace, "prioritized-backlog.md", render_backlog(ctx.consolidated))
-        safe_write(ctx.workspace, "limitations.md", render_limitations(ctx.manifest.data, ctx.tool_results))
+        artifacts = _write_reporting_artifacts(
+            workspace=ctx.workspace,
+            consolidated=ctx.consolidated,
+            project_context=ctx.project_context,
+            config=ctx.config,
+            manifest_data=ctx.manifest.data,
+            tool_results=ctx.tool_results,
+        )
         stage = ctx.manifest.data["stages"][-1]
-        for artifact in ("executive-summary.md", "technical-report.md", "prioritized-backlog.md", "limitations.md"):
+        for artifact in artifacts:
             ctx.manifest.log_artifact(stage, artifact, ctx.workspace / artifact)
 
 
@@ -219,6 +240,58 @@ def _load_or_default_challenged(workspace: Path, valid_findings: list, manifest)
         )
         challenged.append(updated)
     return challenged
+
+
+def _build_consolidated_output(workspace: Path, challenged_findings: list[dict]) -> dict:
+    debated_findings = selective_debate(challenged_findings)
+    _write_debate_prompts(workspace, debated_findings)
+    consolidated = consolidate(debated_findings)
+    consolidated["contradictions"] = detect_contradictions(debated_findings)
+    return consolidated
+
+
+def _write_debate_prompts(workspace: Path, findings: list[dict]) -> None:
+    raw_dir = workspace / "raw"
+    for existing in raw_dir.glob("*.debate.md"):
+        existing.unlink(missing_ok=True)
+    for finding in findings:
+        prompt = finding.get("debate_prompt")
+        if not prompt:
+            continue
+        safe_write(workspace, f"raw/{finding.get('id', 'UNKNOWN')}.debate.md", str(prompt))
+
+
+def _write_reporting_artifacts(
+    *,
+    workspace: Path,
+    consolidated: dict,
+    project_context: dict,
+    config,
+    manifest_data: dict,
+    tool_results: dict,
+) -> list[str]:
+    safe_write(workspace, "executive-summary.md", render_executive_summary(consolidated, project_context, config))
+    safe_write(workspace, "technical-report.md", render_technical_report(consolidated, project_context))
+    safe_write(workspace, "prioritized-backlog.md", render_backlog(consolidated))
+    safe_write(workspace, "limitations.md", render_limitations(manifest_data, tool_results))
+    safe_write(workspace, "remediation-plan.md", generate_remediation_plan(consolidated, project_context))
+
+    issues_dir = workspace / "issues"
+    if issues_dir.exists():
+        for existing in issues_dir.glob("*.md"):
+            existing.unlink(missing_ok=True)
+    issue_templates = generate_issue_templates(consolidated)
+    artifacts = [
+        "executive-summary.md",
+        "technical-report.md",
+        "prioritized-backlog.md",
+        "limitations.md",
+        "remediation-plan.md",
+    ]
+    for relative_path, content in issue_templates.items():
+        safe_write(workspace, relative_path, content)
+        artifacts.append(relative_path)
+    return artifacts
 
 
 # ── Default full pipeline ─────────────────────────────────────────────────────

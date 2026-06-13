@@ -26,3 +26,6 @@
 | product-reviewer | product | documentation present | — |
 | data-privacy-reviewer | data_privacy | always when requested | — |
 | ai-reviewer | ai | AI/ML libraries detected | — |
+| api-design-reviewer | api_design | `project_context["apis"]` non-empty | — |
+| ai-security-reviewer | ai_security | AI/ML libraries detected | — |
+| ai-quality-reviewer | ai_quality | AI/ML libraries detected | — |
