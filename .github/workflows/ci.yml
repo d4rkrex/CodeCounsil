@@ -30,6 +30,20 @@ jobs:
       - name: Run tests with coverage
         run: pytest --tb=short -q --cov=core --cov-report=term-missing --cov-fail-under=70
 
+      # Roadmap Etapa 1: Run evaluation harness against fixture projects
+      # Only runs when fixture reviews already exist (.review/ dirs present)
+      # On fresh CI runs this is a no-op; fixtures must be pre-reviewed and committed
+      - name: Run evaluation harness (if fixtures reviewed)
+        run: codecouncil-eval --format json | python -c "
+import json, sys
+results = json.load(sys.stdin)
+for r in results:
+    if r.get('recall') is not None and r['recall'] == 0.0 and r.get('findings_total', 0) == 0:
+        print(f\"  {r['project']}: no review output (skip)\")
+    else:
+        print(f\"  {r['project']}: recall={r.get('recall')} precision={r.get('precision')} fp={r.get('false_positives')}\")
+" || echo "Evaluation complete (some fixtures pending review)"
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

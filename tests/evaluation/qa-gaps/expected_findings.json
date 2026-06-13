@@ -1,0 +1,37 @@
+{
+  "project": "qa-gaps",
+  "description": "Missing test coverage for critical flows",
+  "known_defects": [
+    {
+      "id": "KD-QA-001",
+      "description": "No tests for promo+tier discount combinations",
+      "file": "app.py",
+      "line_hint": 6,
+      "expected_domains": ["qa"],
+      "expected_classification": ["test_gap", "confirmed_finding"],
+      "expected_severity_min": "medium",
+      "keywords": ["test", "promo", "discount", "combination", "coverage", "edge case"]
+    },
+    {
+      "id": "KD-QA-002",
+      "description": "No edge case tests for calculate_discount",
+      "file": "app.py",
+      "line_hint": 6,
+      "expected_domains": ["qa"],
+      "expected_classification": ["test_gap", "improvement"],
+      "expected_severity_min": "low",
+      "keywords": ["test", "edge", "zero", "negative", "boundary"]
+    },
+    {
+      "id": "KD-QA-003",
+      "description": "No integration test for refund flow",
+      "file": "app.py",
+      "line_hint": 22,
+      "expected_domains": ["qa"],
+      "expected_classification": ["test_gap", "confirmed_finding"],
+      "expected_severity_min": "medium",
+      "keywords": ["test", "refund", "integration", "coverage"]
+    }
+  ],
+  "thresholds": {"min_recall": 0.33}
+}

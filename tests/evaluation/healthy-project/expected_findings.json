@@ -1,0 +1,16 @@
+{
+  "project": "healthy-project",
+  "description": "Well-written code — false positive evaluation",
+  "known_defects": [],
+  "should_not_find": [
+    "IDOR or missing auth check — ownership check is present",
+    "Hardcoded secrets — uses os.environ",
+    "PII logging — logs only user_id and order_id",
+    "Non-idempotent payment — idempotency key implemented"
+  ],
+  "thresholds": {
+    "max_confirmed_findings": 0,
+    "max_probable_risk_severity": "medium",
+    "max_total_findings": 3
+  }
+}

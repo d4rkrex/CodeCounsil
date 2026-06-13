@@ -38,9 +38,10 @@ dev = [
 [project.scripts]
 project-review = "core.cli:main"
 codecounsil-install = "core.install:main"
+codecounsil-eval = "core.evaluation.runner:main"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/unit", "tests/integration"]
 addopts = "-v --tb=short"
 
 [tool.hatch.build]

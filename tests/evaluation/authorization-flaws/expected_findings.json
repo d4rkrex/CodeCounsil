@@ -1,0 +1,39 @@
+{
+  "project": "authorization-flaws",
+  "description": "AppSec-specific authorization vulnerabilities",
+  "known_defects": [
+    {
+      "id": "KD-AUTH-001",
+      "description": "BOLA — data retrieved before authorization check",
+      "file": "app.py",
+      "line_hint": 15,
+      "expected_domains": ["security"],
+      "expected_classification": ["confirmed_finding", "probable_risk"],
+      "expected_severity_min": "high",
+      "keywords": ["bola", "idor", "authorization", "ownership", "object level"]
+    },
+    {
+      "id": "KD-AUTH-002",
+      "description": "BFLA — role extracted from request parameter",
+      "file": "app.py",
+      "line_hint": 28,
+      "expected_domains": ["security"],
+      "expected_classification": ["confirmed_finding"],
+      "expected_severity_min": "high",
+      "keywords": ["bfla", "role", "function level", "authorization", "jwt", "param"]
+    },
+    {
+      "id": "KD-AUTH-003",
+      "description": "Bulk export without authorization scope",
+      "file": "app.py",
+      "line_hint": 38,
+      "expected_domains": ["security"],
+      "expected_classification": ["confirmed_finding", "probable_risk"],
+      "expected_severity_min": "medium",
+      "keywords": ["bulk", "export", "scope", "authorization"]
+    }
+  ],
+  "thresholds": {
+    "min_recall": 0.67
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "project": "architecture-smells",
+  "description": "Architecture God class and tight coupling",
+  "known_defects": [
+    {
+      "id": "KD-ARCH-001",
+      "description": "God class with 25+ unrelated responsibilities",
+      "file": "app.py",
+      "line_hint": 6,
+      "expected_domains": ["architecture"],
+      "expected_classification": ["confirmed_finding", "design_weakness"],
+      "expected_severity_min": "medium",
+      "keywords": ["god", "class", "responsibilities", "coupling", "cohesion", "single responsibility"]
+    },
+    {
+      "id": "KD-ARCH-002",
+      "description": "All modules directly import ApplicationManager",
+      "file": "app.py",
+      "line_hint": 55,
+      "expected_domains": ["architecture"],
+      "expected_classification": ["confirmed_finding", "design_weakness"],
+      "expected_severity_min": "medium",
+      "keywords": ["coupling", "import", "dependency", "tight"]
+    }
+  ],
+  "thresholds": {"min_recall": 0.5}
+}

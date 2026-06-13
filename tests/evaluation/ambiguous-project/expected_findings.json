@@ -1,0 +1,19 @@
+{
+  "project": "ambiguous-project",
+  "description": "Missing context — CodeCounsil must not over-claim",
+  "known_defects": [],
+  "expected_behavior": {
+    "classification": ["probable_risk", "insufficient_evidence"],
+    "confidence": ["low", "medium"],
+    "must_declare_assumption": "Authorization may be enforced upstream (API Gateway)",
+    "must_declare_missing_evidence": "API Gateway or reverse proxy configuration"
+  },
+  "forbidden_outputs": [
+    "confirmed_finding with severity >= high about missing auth",
+    "confidence: high on authorization finding"
+  ],
+  "thresholds": {
+    "max_confirmed_findings": 0,
+    "max_high_severity_findings": 0
+  }
+}

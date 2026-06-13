@@ -1,0 +1,74 @@
+{
+  "project": "vulnerable-project",
+  "description": "Known defects that CodeCounsil must detect",
+  "known_defects": [
+    {
+      "id": "KD-001",
+      "description": "IDOR — /users/{user_id} has no ownership check",
+      "file": "app.py",
+      "line_hint": 17,
+      "expected_domains": ["security"],
+      "expected_classification": ["confirmed_finding", "probable_risk"],
+      "expected_severity_min": "high",
+      "keywords": ["idor", "authorization", "ownership", "bola"]
+    },
+    {
+      "id": "KD-002",
+      "description": "Hardcoded database password in source code",
+      "file": "app.py",
+      "line_hint": 8,
+      "expected_domains": ["security"],
+      "expected_classification": ["confirmed_finding"],
+      "expected_severity_min": "high",
+      "keywords": ["secret", "hardcoded", "password", "credential"]
+    },
+    {
+      "id": "KD-003",
+      "description": "PII (email) logged on every request",
+      "file": "app.py",
+      "line_hint": 35,
+      "expected_domains": ["security", "data_privacy"],
+      "expected_classification": ["confirmed_finding", "probable_risk"],
+      "expected_severity_min": "medium",
+      "keywords": ["log", "email", "pii", "sensitive"]
+    },
+    {
+      "id": "KD-004",
+      "description": "Non-idempotent retry — payment charged twice",
+      "file": "payments.py",
+      "line_hint": 28,
+      "expected_domains": ["architecture", "developer", "security"],
+      "expected_classification": ["confirmed_finding", "probable_risk", "design_weakness"],
+      "expected_severity_min": "medium",
+      "keywords": ["idempoten", "retry", "payment", "duplicate", "charge"]
+    },
+    {
+      "id": "KD-005",
+      "description": "Database migration with no rollback/downgrade function",
+      "file": "migrations/001_add_users.py",
+      "line_hint": 1,
+      "expected_domains": ["architecture", "developer", "sre"],
+      "expected_classification": ["confirmed_finding", "probable_risk", "design_weakness"],
+      "expected_severity_min": "low",
+      "keywords": ["migration", "rollback", "downgrade"]
+    },
+    {
+      "id": "KD-006",
+      "description": "Critical checkout/payment flow has no test coverage",
+      "file": "tests/__init__.py",
+      "line_hint": 1,
+      "expected_domains": ["qa"],
+      "expected_classification": ["confirmed_finding", "test_gap"],
+      "expected_severity_min": "medium",
+      "keywords": ["test", "coverage", "checkout", "payment"]
+    }
+  ],
+  "should_not_find": [
+    "Architecture issues unrelated to identified patterns",
+    "False positives from test files"
+  ],
+  "thresholds": {
+    "min_recall": 0.6,
+    "max_false_positive_rate": 0.4
+  }
+}
