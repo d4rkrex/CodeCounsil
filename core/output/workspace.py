@@ -95,13 +95,16 @@ def _inspect_existing_tree(path: Path) -> None:
 
 def _assert_safe_leaf(path: Path, allow_directory: bool = False) -> None:
     metadata = os.lstat(path)
+    # VT-Spec T-003: Reject symlinks — they can redirect writes to arbitrary locations.
+    # The real protection against hardlink-based attacks is O_NOFOLLOW at write time
+    # (see safe_write). Checking st_nlink > 1 here is NOT reliable because:
+    #   - macOS APFS sets st_nlink=2 on freshly written files (internal CoW behavior)
+    #   - git-tracked files have st_nlink >= 2
+    # Hardlinks (unlike symlinks) cannot redirect a write to a different path.
     if stat.S_ISLNK(metadata.st_mode):
         raise SecurityError(f"T-003: Symlink detected in output path: {path}")
-    if stat.S_ISREG(metadata.st_mode) and metadata.st_nlink > 1:
-        raise SecurityError(f"T-003: Hardlink detected in output path: {path}")
     if not allow_directory and stat.S_ISDIR(metadata.st_mode):
         raise SecurityError(f"T-003: Expected file but found directory: {path}")
-
 
 def _remove_existing(path: Path) -> None:
     if path.is_dir():

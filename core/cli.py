@@ -157,6 +157,7 @@ def main() -> None:
         if args.update_baseline:
             baseline.update(consolidated.get("findings", []))
             baseline.save()
+            output_payload["baseline_updated"] = True
 
     if args.output_format == "json":
         output_payload["consolidated"] = display_consolidated

@@ -80,72 +80,88 @@ echo ""
 
 echo -e "${CYAN}▶ Detecting installed coding agents...${RESET}"
 
-HAS_CLAUDE=0; HAS_COPILOT=0; HAS_OPENCODE=0
+HAS_CLAUDE=0; HAS_COPILOT=0; HAS_OPENCODE=0; HAS_COPILOT_CLI=0
 
-# Claude Code: check for the 'claude' binary
-command -v claude &>/dev/null && HAS_CLAUDE=1
-
-# GitHub Copilot CLI: check for ~/.copilot/skills/ directory (this agent)
-HAS_COPILOT_CLI=0
-[[ -d "$HOME/.copilot/skills" ]] && HAS_COPILOT_CLI=1
-
-# GitHub Copilot VS Code: check for gh extension or VS Code extension directory
-HAS_COPILOT=0
-if command -v gh &>/dev/null && gh extension list 2>/dev/null | grep -q "copilot"; then
-  HAS_COPILOT=1
+# In update/force mode: detect what's ALREADY INSTALLED (by checking existing files)
+# In install mode: detect by binary/extension presence
+if [[ "$MODE" == "update" || "$MODE" == "force" ]]; then
+  # Check for existing CodeCounsil adapter files
+  [[ -f "$HOME/.claude/commands/project-review.md" ]] && HAS_CLAUDE=1
+  [[ -f "$HOME/.copilot/skills/codecounsil/SKILL.md" ]] && HAS_COPILOT_CLI=1
+  # For Copilot VS / OpenCode, check if any project recently installed adapters
+  # Fall back to binary detection
+  command -v claude &>/dev/null && HAS_CLAUDE=1
+  [[ -d "$HOME/.copilot/skills" ]] && HAS_COPILOT_CLI=1
+  command -v opencode &>/dev/null && HAS_OPENCODE=1
+  # Don't prompt for undetected agents in update mode
+else
+  # Fresh install: detect by binary/extension presence
+  command -v claude &>/dev/null && HAS_CLAUDE=1
+  [[ -d "$HOME/.copilot/skills" ]] && HAS_COPILOT_CLI=1
+  if command -v gh &>/dev/null && gh extension list 2>/dev/null | grep -q "copilot"; then
+    HAS_COPILOT=1
+  fi
+  if [[ -d "$HOME/.vscode/extensions" ]] && ls "$HOME/.vscode/extensions/" 2>/dev/null | grep -qi "github.copilot"; then
+    HAS_COPILOT=1
+  fi
+  command -v cursor &>/dev/null && HAS_COPILOT=1
+  command -v opencode &>/dev/null && HAS_OPENCODE=1
 fi
-if [[ -d "$HOME/.vscode/extensions" ]] && ls "$HOME/.vscode/extensions/" 2>/dev/null | grep -qi "github.copilot"; then
-  HAS_COPILOT=1
-fi
-command -v cursor &>/dev/null && HAS_COPILOT=1
 
-# OpenCode: check for 'opencode' binary
-command -v opencode &>/dev/null && HAS_OPENCODE=1
-
-[[ $HAS_CLAUDE       -eq 1 ]] && echo -e "  ${GREEN}✓ Claude Code detected${RESET}"           || echo -e "  ○ Claude Code — not detected"
-[[ $HAS_COPILOT_CLI  -eq 1 ]] && echo -e "  ${GREEN}✓ GitHub Copilot CLI detected${RESET}"    || echo -e "  ○ GitHub Copilot CLI — not detected"
-[[ $HAS_COPILOT      -eq 1 ]] && echo -e "  ${GREEN}✓ GitHub Copilot (VS Code) detected${RESET}" || echo -e "  ○ GitHub Copilot (VS Code) — not detected"
-[[ $HAS_OPENCODE     -eq 1 ]] && echo -e "  ${GREEN}✓ OpenCode detected${RESET}"               || echo -e "  ○ OpenCode — not detected"
+[[ $HAS_CLAUDE       -eq 1 ]] && echo -e "  ${GREEN}✓ Claude Code${RESET}"           || echo -e "  ○ Claude Code — not detected"
+[[ $HAS_COPILOT_CLI  -eq 1 ]] && echo -e "  ${GREEN}✓ GitHub Copilot CLI${RESET}"    || echo -e "  ○ GitHub Copilot CLI — not detected"
+[[ $HAS_COPILOT      -eq 1 ]] && echo -e "  ${GREEN}✓ GitHub Copilot (VS Code)${RESET}" || true
+[[ $HAS_OPENCODE     -eq 1 ]] && echo -e "  ${GREEN}✓ OpenCode${RESET}"               || echo -e "  ○ OpenCode — not detected"
 echo ""
 
-# Ask about undetected agents
-if [[ $HAS_CLAUDE -eq 0 || $HAS_COPILOT_CLI -eq 0 || $HAS_COPILOT -eq 0 || $HAS_OPENCODE -eq 0 ]]; then
-  echo -e "${YELLOW}Some agents were not auto-detected. Install adapters for them anyway?${RESET}"
-  [[ $HAS_CLAUDE      -eq 0 ]] && read -rp "  Install Claude Code adapter?         [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_CLAUDE=1
-  [[ $HAS_COPILOT_CLI -eq 0 ]] && read -rp "  Install GitHub Copilot CLI skill?    [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_COPILOT_CLI=1
-  [[ $HAS_COPILOT     -eq 0 ]] && read -rp "  Install GitHub Copilot VS Code adapter? [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_COPILOT=1
-  [[ $HAS_OPENCODE    -eq 0 ]] && read -rp "  Install OpenCode adapter?             [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_OPENCODE=1
-  echo ""
+# Only prompt in fresh install mode
+if [[ "$MODE" == "install" ]]; then
+  if [[ $HAS_CLAUDE -eq 0 || $HAS_COPILOT_CLI -eq 0 || $HAS_COPILOT -eq 0 || $HAS_OPENCODE -eq 0 ]]; then
+    echo -e "${YELLOW}Some agents were not auto-detected. Install adapters for them anyway?${RESET}"
+    [[ $HAS_CLAUDE      -eq 0 ]] && read -rp "  Install Claude Code adapter?            [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_CLAUDE=1
+    [[ $HAS_COPILOT_CLI -eq 0 ]] && read -rp "  Install GitHub Copilot CLI skill?       [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_COPILOT_CLI=1
+    [[ $HAS_COPILOT     -eq 0 ]] && read -rp "  Install GitHub Copilot VS Code adapter? [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_COPILOT=1
+    [[ $HAS_OPENCODE    -eq 0 ]] && read -rp "  Install OpenCode adapter?               [y/N] " r && [[ "$r" =~ ^[Yy] ]] && HAS_OPENCODE=1
+    echo ""
+  fi
 fi
 
 if [[ $HAS_CLAUDE -eq 0 && $HAS_COPILOT_CLI -eq 0 && $HAS_COPILOT -eq 0 && $HAS_OPENCODE -eq 0 ]]; then
-  echo "No agents selected. Nothing to install."
+  echo "No agents detected or selected. Nothing to install."
   exit 0
 fi
 
 # ── 3. Global or per-project? ──────────────────────────────
 
-echo -e "${CYAN}▶ Where do you want to install the adapters?${RESET}"
-echo ""
-echo -e "  ${BOLD}[1] Global${RESET} — installs to your home config directories"
-echo -e "      ${YELLOW}Claude Code${RESET}       → ~/.claude/commands/ and ~/.claude/agents/"
-echo -e "      ${YELLOW}Copilot CLI${RESET}       → ~/.copilot/skills/codecounsil/  (global, always)"
-echo -e "      ${YELLOW}GitHub Copilot VS${RESET} → (per-project only)"
-echo -e "      ${YELLOW}OpenCode${RESET}           → (per-project only)"
-echo ""
-echo -e "  ${BOLD}[2] Per-project${RESET} — installs into a specific repo"
-echo -e "      Adds adapter files directly to that repository's config dirs"
-echo ""
+# In update mode: default global (where most things are installed)
+if [[ "$MODE" == "update" || "$MODE" == "force" ]]; then
+  INSTALL_MODE="global"
+  TARGET="$HOME"
+  echo -e "${CYAN}▶ Updating global adapter files...${RESET}"
+  echo ""
+else
+  echo -e "${CYAN}▶ Where do you want to install the adapters?${RESET}"
+  echo ""
+  echo -e "  ${BOLD}[1] Global${RESET} — installs to your home config directories"
+  echo -e "      ${YELLOW}Claude Code${RESET}       → ~/.claude/commands/ and ~/.claude/agents/"
+  echo -e "      ${YELLOW}Copilot CLI${RESET}       → ~/.copilot/skills/codecounsil/"
+  echo -e "      ${YELLOW}GitHub Copilot VS${RESET} → (per-project only)"
+  echo -e "      ${YELLOW}OpenCode${RESET}           → (per-project only)"
+  echo ""
+  echo -e "  ${BOLD}[2] Per-project${RESET} — installs into a specific repo"
+  echo -e "      Adds adapter files directly to that repository's config dirs"
+  echo ""
 
-while true; do
-  read -rp "Choice [1/2]: " INSTALL_MODE
-  case "$INSTALL_MODE" in
-    1) INSTALL_MODE="global"; break ;;
-    2) INSTALL_MODE="project"; break ;;
-    *) echo "Please enter 1 or 2." ;;
-  esac
-done
-echo ""
+  while true; do
+    read -rp "Choice [1/2]: " INSTALL_MODE
+    case "$INSTALL_MODE" in
+      1) INSTALL_MODE="global"; break ;;
+      2) INSTALL_MODE="project"; break ;;
+      *) echo "Please enter 1 or 2." ;;
+    esac
+  done
+  echo ""
+fi
 
 # ── 4. Get target path ─────────────────────────────────────
 
@@ -160,7 +176,11 @@ fi
 
 # ── 5. Install adapter files ───────────────────────────────
 
-echo -e "${CYAN}▶ Installing adapters...${RESET}"
+if [[ "$MODE" == "update" || "$MODE" == "force" ]]; then
+  echo -e "${CYAN}▶ Updating adapters...${RESET}"
+else
+  echo -e "${CYAN}▶ Installing adapters...${RESET}"
+fi
 echo ""
 
 PLATFORMS=""
